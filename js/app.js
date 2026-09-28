@@ -201,8 +201,7 @@ const App = (() => {
       <div class="kicker hc">${h.title}</div>
       <h2 class="glitch" data-text="${h.name}">${h.name}</h2>
       <p class="hi-desc">${h.desc}</p>
-      ${statBars(h, true)}
-      ${modelBadge(h)}`;
+      ${statBars(h, true)}`;
     box.classList.remove('enter-l', 'enter-r', 'enter');
     void box.offsetWidth;
     box.classList.add(dir < 0 ? 'enter-l' : dir > 0 ? 'enter-r' : 'enter');
@@ -343,7 +342,7 @@ const App = (() => {
           return `
           <div class="t-row ${h.isPlayer ? 'me' : ''} ${zone}" data-id="${r.id}" data-pts="${r.pts}" style="--hc:${h.color};--i:${i}">
             <span class="pos">${i === 0 && anyPlayed ? '👑' : i + 1}</span>
-            <span class="t-who">${ava(h)}<span class="t-name">${link(h)}<small>${h.modelIcon} ${h.modelName}</small></span>${h.isPlayer ? '<em class="you-tag">ВЫ</em>' : ''}</span>
+            <span class="t-who">${ava(h)}<span class="t-name">${link(h)}</span>${h.isPlayer ? '<em class="you-tag">ВЫ</em>' : ''}</span>
             <span>${r.p}</span><span>${r.w}</span><span>${r.d}</span><span>${r.l}</span>
             <span class="c-gd">${r.gf}<i>:</i>${r.ga}</span>
             <span class="pts">${r.pts}</span>
@@ -388,17 +387,6 @@ const App = (() => {
     const total = state.schedule.length;
     const half = total / 2;
     $('pane-schedule').innerHTML = `
-      <div class="formula">
-        <div class="f-icon">∑</div>
-        <div>
-          <b>Как составлен календарь — метод Бергера (круговой многоугольник)</b>
-          <p>n = ${N} участников, R = n − 1 = ${N - 1} туров в круге. Участник n−1 стоит в центре, остальные — по кругу.
-          В туре r центр играет с участником r, а пары i = 1…${N / 2 - 1} составляются так:</p>
-          <code>A = (r + i) mod (n − 1)  &nbsp;·&nbsp;  B = (r − i) mod (n − 1)</code>
-          <p>Хозяин поля чередуется по чётности r и i. Второй круг — зеркальный: хозяева и гости меняются местами.
-          Итого ${total} туров, каждый играет с каждым дважды — дома и в гостях, и в каждом туре заняты все ${N} героев.</p>
-        </div>
-      </div>
       <div class="rounds-strip" id="roundsStrip">
         <span class="rs-label">Круг I</span>
         ${state.schedule.map((_, r) => `${r === half ? '<span class="rs-label">Круг II</span>' : ''}
@@ -558,7 +546,7 @@ const App = (() => {
   function fillVsSide(el, h, where) {
     el.style.setProperty('--hc', h.color);
     el.innerHTML = `<img src="${h.sprite}" alt="" />
-      <div class="vs-name"><small>${where}${h.isPlayer ? ' · ваш герой' : ''}</small><b>${h.name}</b><em>${h.modelIcon} ${h.modelName}</em></div>`;
+      <div class="vs-name"><small>${where}${h.isPlayer ? ' · ваш герой' : ''}</small><b>${h.name}</b></div>`;
   }
 
   async function vsIn(H, A, info) {

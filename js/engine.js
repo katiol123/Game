@@ -738,7 +738,6 @@ const Engine = (() => {
       el.style.setProperty('--pc', h.color);
       el.querySelector('.m-sprite').src = h.sprite;
       el.querySelector('.name').textContent = h.name;
-      el.querySelector('.style').textContent = `${h.modelIcon} ${h.modelName}`;
       el.querySelector('.side').textContent = i === 0 ? 'Дома' : 'В гостях';
       el.querySelector('.you').hidden = !h.isPlayer;
       el.querySelector('.score').textContent = '0';

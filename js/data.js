@@ -6,8 +6,12 @@
  *  face   — кадрирование аватарки: size (ширина картинки в % от кружка), x/y (background-position в %).
  * ========================================================= */
 
-const SPRITE_STUB = 'assets/heroes/frog_40yo_stylized.png';
-const FACE_STUB = { size: 300, x: 62, y: 7 };
+// Кадрирование лица для круглых аватарок (картинки 1:1)
+const FACES = {
+  frog: { x: 48.5, y: -3.6 }, granny: { x: 51.4, y: -2.4 }, sofa: { x: 47.3, y: -1.9 },
+  goose: { x: 50.6, y: -3.9 }, plumber: { x: 51.6, y: -3.4 }, dumpling: { x: 50.6, y: -0.6 },
+  cat: { x: 51.4, y: -1.6 }, shawarma: { x: 45, y: -0.4 },
+};
 
 const HEROES = [
   {
@@ -42,7 +46,7 @@ const HEROES = [
     id: 'shawarma', name: 'Шаурмен', title: 'Супергерой в лаваше', color: '#ffd93d',
     desc: 'Сила — в чесноке, слабость — в санэпидемстанции. Заворачивает победы в тонкий лаваш.',
   },
-].map((h) => ({ sprite: SPRITE_STUB, face: FACE_STUB, ...h }));
+].map((h) => ({ sprite: `assets/heroes/${h.id}.png`, face: { size: 500, ...FACES[h.id] }, ...h }));
 
 const HERO_BY_ID = Object.fromEntries(HEROES.map((h) => [h.id, h]));
 

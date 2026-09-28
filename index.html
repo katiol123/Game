@@ -3,76 +3,148 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Три в ряд — ИИ против ИИ</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Лига Трёх Камней</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
   <div class="bg">
     <span class="blob b1"></span>
     <span class="blob b2"></span>
     <span class="blob b3"></span>
+    <div class="grid-floor"></div>
   </div>
 
-  <header>
-    <h1>Три в ряд <small>ИИ против ИИ</small></h1>
-    <div class="round" id="round">Ход 1 / 20</div>
-  </header>
+  <!-- ============ ВЫБОР ГЕРОЯ ============ -->
+  <section class="screen" id="scr-select">
+    <div class="sel-glow" id="selGlow"></div>
+    <header class="sel-head">
+      <div class="kicker">Лига Трёх Камней · сезон I</div>
+      <h1>Выбери своего героя</h1>
+    </header>
 
-  <main>
-    <section class="player" id="p0">
-      <div class="avatar"></div>
-      <div class="name"></div>
-      <div class="style"></div>
-      <div class="score">0</div>
-      <div class="meta">
-        <span>Ходов: <b class="moves">0</b></span>
-        <span>Макс. комбо: <b class="combo">0</b></span>
+    <div class="sel-body">
+      <div class="carousel" id="carousel">
+        <div class="track" id="track"></div>
+        <button class="nav prev" id="prevBtn" aria-label="Предыдущий">‹</button>
+        <button class="nav next" id="nextBtn" aria-label="Следующий">›</button>
       </div>
-      <div class="thinking"><i></i><i></i><i></i></div>
-    </section>
 
-    <div class="board-wrap" id="boardWrap">
-      <canvas id="board"></canvas>
-      <div class="banner" id="banner"></div>
-      <div class="overlay" id="overlay">
-        <div class="overlay-card">
-          <div class="trophy">🏆</div>
-          <h2 id="winnerText"></h2>
-          <p id="finalScores"></p>
-          <p class="countdown" id="countdown"></p>
-          <button id="againBtn">Новая партия</button>
+      <div class="hero-info" id="heroInfo">
+        <div class="hi-inner" id="hiInner"></div>
+      </div>
+    </div>
+
+    <div class="dots" id="dots"></div>
+    <button class="cta" id="chooseBtn"><span>Выбрать героя</span></button>
+  </section>
+
+  <!-- ============ ЛИГА ============ -->
+  <section class="screen" id="scr-league">
+    <header class="league-head">
+      <div class="lh-left">
+        <div class="kicker">Лига Трёх Камней</div>
+        <h1 class="lh-title">Сезон I</h1>
+        <div class="lh-sub" id="tourInfo"></div>
+      </div>
+      <div class="lh-me" id="meChip"></div>
+      <div class="lh-actions">
+        <button class="cta play" id="playBtn"><span>▶ Играть</span></button>
+        <button class="ghost" id="newBtn">↺ Новый турнир</button>
+      </div>
+    </header>
+
+    <nav class="tabs" id="tabs">
+      <button data-tab="table" class="active">Турнирная таблица</button>
+      <button data-tab="schedule">Расписание</button>
+      <span class="tab-ink" id="tabInk"></span>
+    </nav>
+
+    <div class="panes" id="panes">
+      <div class="pane active" id="pane-table"></div>
+      <div class="pane" id="pane-schedule"></div>
+    </div>
+  </section>
+
+  <!-- ============ СТРАНИЦА ГЕРОЯ ============ -->
+  <section class="screen" id="scr-hero">
+    <button class="ghost back" id="heroBack">← Назад</button>
+    <div class="hero-page" id="heroPage"></div>
+  </section>
+
+  <!-- ============ МАТЧ ============ -->
+  <section class="screen" id="scr-match">
+    <header class="match-head">
+      <div class="round" id="matchInfo"></div>
+    </header>
+    <main class="match-main">
+      <section class="player" id="mp0">
+        <div class="m-sprite-wrap"><img class="m-sprite" alt="" /></div>
+        <div class="side"></div>
+        <div class="name"></div>
+        <div class="style"></div>
+        <div class="you" hidden>ВЫ</div>
+        <div class="score">0</div>
+        <div class="meta">
+          <span>Ходов: <b class="moves">0</b></span>
+          <span>Макс. комбо: <b class="combo">0</b></span>
+        </div>
+        <div class="thinking"><i></i><i></i><i></i></div>
+      </section>
+
+      <div class="board-wrap" id="boardWrap">
+        <canvas id="board"></canvas>
+        <div class="banner" id="banner"></div>
+        <div class="overlay" id="resultOverlay">
+          <div class="overlay-card" id="resultCard"></div>
         </div>
       </div>
-    </div>
 
-    <section class="player" id="p1">
-      <div class="avatar"></div>
-      <div class="name"></div>
-      <div class="style"></div>
-      <div class="score">0</div>
-      <div class="meta">
-        <span>Ходов: <b class="moves">0</b></span>
-        <span>Макс. комбо: <b class="combo">0</b></span>
+      <section class="player" id="mp1">
+        <div class="m-sprite-wrap"><img class="m-sprite" alt="" /></div>
+        <div class="side"></div>
+        <div class="name"></div>
+        <div class="style"></div>
+        <div class="you" hidden>ВЫ</div>
+        <div class="score">0</div>
+        <div class="meta">
+          <span>Ходов: <b class="moves">0</b></span>
+          <span>Макс. комбо: <b class="combo">0</b></span>
+        </div>
+        <div class="thinking"><i></i><i></i><i></i></div>
+      </section>
+    </main>
+
+    <footer class="match-foot">
+      <div class="controls">
+        <button id="pauseBtn">⏸ Пауза</button>
+        <div class="speed" id="speed">
+          <span>Скорость:</span>
+          <button data-speed="0.5">0.5×</button>
+          <button data-speed="1" class="active">1×</button>
+          <button data-speed="2">2×</button>
+          <button data-speed="4">4×</button>
+        </div>
+        <button id="skipBtn">⏭ Досчитать матч</button>
       </div>
-      <div class="thinking"><i></i><i></i><i></i></div>
-    </section>
-  </main>
+      <ul class="log" id="log"></ul>
+    </footer>
+  </section>
 
-  <footer>
-    <div class="controls">
-      <button id="pauseBtn">⏸ Пауза</button>
-      <div class="speed" id="speed">
-        <span>Скорость:</span>
-        <button data-speed="0.5">0.5×</button>
-        <button data-speed="1" class="active">1×</button>
-        <button data-speed="2">2×</button>
-        <button data-speed="4">4×</button>
-      </div>
-      <button id="restartBtn">↻ Заново</button>
-    </div>
-    <ul class="log" id="log"></ul>
-  </footer>
+  <!-- ============ ЭФФЕКТЫ ПЕРЕХОДОВ ============ -->
+  <div class="vs" id="vs">
+    <div class="vs-side left" id="vsLeft"></div>
+    <div class="vs-side right" id="vsRight"></div>
+    <div class="vs-mark">VS</div>
+    <div class="vs-info" id="vsInfo"></div>
+  </div>
+  <div id="fx"></div>
 
-  <script src="game.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/league.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>

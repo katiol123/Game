@@ -447,6 +447,11 @@ const App = (() => {
     });
   }
 
+  // Текущее место героя в таблице (по всем уже сыгранным матчам)
+  function placeOf(id) {
+    return League.standings(state).findIndex((r) => r.id === id) + 1;
+  }
+
   function fixture(m) {
     const H = hero(m.home), A = hero(m.away);
     const res = m.result;
@@ -456,14 +461,14 @@ const App = (() => {
     return `
       <div class="fixture ${res ? 'done' : ''} ${H.isPlayer || A.isPlayer ? 'mine' : ''}" style="--h1:${H.color};--h2:${A.color}">
         <div class="fx-side home ${sideCls(hw)}">
-          ${ava(H)}<div class="fx-name">${link(H)}<small>${tr('дома', 'home')}${H.isPlayer ? tr(' · вы', ' · you') : ''}</small></div>
+          ${ava(H)}<div class="fx-name"><span class="fx-who">${link(H)}<i class="fx-pos">(${placeOf(H.id)})</i></span><small>${tr('дома', 'home')}${H.isPlayer ? tr(' · вы', ' · you') : ''}</small></div>
         </div>
         <div class="fx-mid">
           ${res ? `<div class="fx-score"><b>${res.home}</b><i>:</i><b>${res.away}</b></div><small>${draw ? tr('ничья', 'draw') : res.crush ? tr('сокрушительная', 'crushing') : res.ko ? tr('нокаут', 'knockout') : tr('завершён', 'finished')}</small>`
                 : `<div class="fx-vs">VS</div><small>${tr('предстоит', 'upcoming')}</small>`}
         </div>
         <div class="fx-side away ${sideCls(aw)}">
-          <div class="fx-name">${link(A)}<small>${tr('в гостях', 'away')}${A.isPlayer ? tr(' · вы', ' · you') : ''}</small></div>${ava(A)}
+          <div class="fx-name"><span class="fx-who"><i class="fx-pos">(${placeOf(A.id)})</i>${link(A)}</span><small>${tr('в гостях', 'away')}${A.isPlayer ? tr(' · вы', ' · you') : ''}</small></div>${ava(A)}
         </div>
       </div>`;
   }
@@ -620,10 +625,15 @@ const App = (() => {
   /* ---------------------------------------------------------
    *  Матчи тура
    * ------------------------------------------------------- */
+  // Сторона заставки VS: спрайт, имя, текущее место в таблице и форма (последние 5 игр)
   function fillVsSide(el, h, where) {
+    const st = League.standings(state);
+    const row = st.find((r) => r.id === h.id);
+    const form = row.form.slice(-5).map((f) => `<i class="f-${f}">${FORM()[f]}</i>`).join('') || '<i class="f-none">—</i>';
     el.style.setProperty('--hc', h.color);
     el.innerHTML = `<img src="${h.sprite}" alt="" />
-      <div class="vs-name"><small>${where}${h.isPlayer ? tr(' · ваш герой', ' · your hero') : ''}</small><b>${h.name}</b></div>`;
+      <div class="vs-name"><small>${where}${h.isPlayer ? tr(' · ваш герой', ' · your hero') : ''}</small><b>${h.name}</b>
+        <div class="vs-meta">${ava(h)}<span class="vs-place">${st.indexOf(row) + 1}</span><span class="vs-form">${form}</span></div></div>`;
   }
 
   async function vsIn(H, A, info) {
@@ -759,9 +769,9 @@ const App = (() => {
 
       let left = xp.some((x) => x.g.ups) ? 8 : 6;
       let timer = null;
+      // окно результата остаётся на экране, пока его не закроют шторки следующего матча
       const done = () => {
         clearInterval(timer);
-        $('resultOverlay').classList.remove('show');
         resolve();
       };
       const tick = () => {
@@ -784,17 +794,16 @@ const App = (() => {
     const round = state.schedule[r];
     Sound.setTrack('match');
 
-    await guarded(() => blinds(() => {
-      $('resultOverlay').classList.remove('show');
-      show('match');
-    }));
-
     for (let k = 0; k < round.length; k++) {
       const m = round[k];
       if (m.result) continue;
       const H = hero(m.home), A = hero(m.away);
       const info = tr(`Тур ${r + 1} · Матч ${k + 1} из ${round.length}`, `Round ${r + 1} · Match ${k + 1} of ${round.length}`);
+      // шторки закрываются поверх того, что было на экране (таблица или итог прошлого матча),
+      // и только за закрытыми шторками появляется новое поле
       await vsIn(H, A, info);
+      if (screen !== 'match') show('match');
+      $('resultOverlay').classList.remove('show');
       $('skipBtn').hidden = H.isPlayer || A.isPlayer; // свой матч игрок играет сам
       const playing = Engine.play({ home: H, away: A, info });
       await vsOut();
@@ -831,6 +840,7 @@ const App = (() => {
 
     Sound.setTrack('menu');
     await guarded(() => blinds(() => {
+      $('resultOverlay').classList.remove('show');
       tab = 'table';
       // без stagger-анимации появления строк: иначе при показе экрана и при перестройке
       // таблицы строки исчезают и появляются заново, прежде чем начнётся перестановка

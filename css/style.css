@@ -289,7 +289,7 @@ button:disabled { opacity: 0.45; cursor: default; transform: none; }
 /* ---------- table ---------- */
 .table { display: flex; flex-direction: column; gap: 6px; perspective: 900px; }
 .t-row { --hc: #fff; position: relative; display: grid; align-items: center; gap: 6px;
-  grid-template-columns: 44px minmax(170px, 1fr) repeat(4, 38px) 104px 52px 150px;
+  grid-template-columns: 44px minmax(170px, 1fr) repeat(4, 38px) 104px 52px 150px 26px;
   padding: 8px 12px; border-radius: 14px; background: var(--card); border: 1px solid transparent;
   text-align: center; font-variant-numeric: tabular-nums; transition: background 0.2s, border-color 0.2s; }
 .t-row:not(.t-head)::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 4px; border-radius: 4px; background: var(--hc); }
@@ -517,6 +517,37 @@ canvas { display: block; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0,
   background: rgba(13, 11, 36, 0.8); border: 1px solid color-mix(in srgb, var(--pc) 55%, transparent);
   box-shadow: 0 0 12px color-mix(in srgb, var(--pc) 35%, transparent); }
 .dmg-badge b { font-family: var(--display); font-weight: 400; font-size: 17px; color: #fff; font-variant-numeric: tabular-nums; }
+/* ---------- травмы ---------- */
+.inj { position: relative; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; font-style: normal;
+  font-size: 15px; font-weight: 900; line-height: 1; color: #fff; background: linear-gradient(180deg, #ff4b5c, #c0102a);
+  box-shadow: 0 0 10px rgba(255, 60, 80, 0.6); cursor: help; vertical-align: middle; }
+.inj.big { width: 34px; height: 34px; font-size: 22px; border-radius: 9px; margin-left: 10px; }
+[data-tip] { position: relative; }
+[data-tip]:hover::after { content: attr(data-tip); position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; min-width: 220px;
+  white-space: pre-line; text-align: left; padding: 8px 12px; border-radius: 10px; font: 600 13px/1.5 "Rubik", sans-serif; color: var(--text);
+  background: rgba(20, 16, 50, 0.97); border: 1px solid rgba(255, 75, 92, 0.6); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); pointer-events: none; }
+.inj.big[data-tip]:hover::after { left: 0; right: auto; }
+.c-inj { display: flex; justify-content: center; }
+.inj-cross { position: absolute; right: -2px; top: -2px; z-index: 2; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+  font-size: 20px; font-weight: 900; color: #fff; background: linear-gradient(180deg, #ff4b5c, #c0102a); box-shadow: 0 0 14px rgba(255, 60, 80, 0.7); cursor: help; }
+.inj-cross[hidden] { display: none; }
+.inj-cross[data-tip]:hover::after { right: 0; }
+#mp0 .inj-cross[data-tip]:hover::after { left: 0; right: auto; }
+.player.injured::after { content: "✚"; position: absolute; left: 50%; top: 38%; z-index: 4; pointer-events: none; font-size: 120px; font-weight: 900;
+  color: #ff2d44; text-shadow: 0 0 30px #ff2d44, 0 0 60px rgba(255, 45, 68, 0.6); animation: injuryCross 1.3s ease-out forwards; }
+.player.injured { animation: hitShake 0.6s ease; }
+@keyframes injuryCross {
+  0% { transform: translate(-50%, -50%) scale(3) rotate(-25deg); opacity: 0; }
+  18% { transform: translate(-50%, -50%) scale(0.9) rotate(0); opacity: 1; }
+  28% { transform: translate(-50%, -50%) scale(1.1); }
+  70% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(0.4); opacity: 0; }
+}
+.card-pop.injury { font-size: 22px; top: 130px; color: #fff; font-family: "Rubik", sans-serif; font-weight: 900;
+  text-shadow: 0 0 12px #ff2d44, 0 0 24px #ff2d44, 0 2px 0 #000; }
+.res-inj { margin-top: 8px; font-size: 13px; color: #ffb3bb; display: flex; flex-wrap: wrap; gap: 6px 12px; justify-content: center; align-items: center; }
+.res-inj > i { font-style: normal; font-weight: 900; color: #ff4b5c; }
+.res-inj b { color: var(--hc); }
 .strike-orb { position: fixed; left: 0; top: 0; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; z-index: 60; pointer-events: none;
   background: radial-gradient(circle, #fff 0%, var(--pc) 45%, transparent 70%); box-shadow: 0 0 30px 10px var(--pc); }
 
@@ -715,7 +746,7 @@ canvas { display: block; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0,
   .score { font-size: 30px; }
 }
 @media (max-width: 720px) {
-  .t-row { grid-template-columns: 34px minmax(120px, 1fr) repeat(4, 26px) 40px; font-size: 14px; padding: 8px; gap: 4px; }
+  .t-row { grid-template-columns: 34px minmax(120px, 1fr) repeat(4, 26px) 40px 20px; font-size: 14px; padding: 8px; gap: 4px; }
   .c-gd, .c-form { display: none !important; }
   .t-who .ava { width: 32px; height: 32px; }
   .record { grid-template-columns: repeat(3, 1fr); }

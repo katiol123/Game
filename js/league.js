@@ -36,7 +36,21 @@ const League = (() => {
     if (!e.bonus) e.bonus = { str: 0, agi: 0, end: 0 };
     if (!Array.isArray(e.picks)) e.picks = [];
     if (typeof e.pending !== 'number') e.pending = 0;
+    if (!Array.isArray(e.injuries)) e.injuries = [];
     return e;
+  }
+
+  /* ---------- травмы ---------- */
+  // После боя: старые травмы сокращаются на бой (на нуле проходят), новые добавляются на 2–4 боя.
+  // e.injuries: [{ id, left }] — left: сколько ещё боёв травма будет действовать
+  function updateInjuries(e, newIds) {
+    e.injuries = e.injuries.map((i) => ({ ...i, left: i.left - 1 })).filter((i) => i.left > 0);
+    const [lo, hi] = INJURY_DURATION;
+    for (const id of newIds) {
+      if (e.injuries.some((i) => i.id === id)) continue;
+      e.injuries.push({ id, left: lo + rnd(hi - lo + 1) });
+    }
+    return e.injuries;
   }
 
   // Множитель опыта по разнице с соперником.
@@ -175,5 +189,5 @@ const League = (() => {
     try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
   }
 
-  return { createRoster, outcome, xpMultiplier, xpGain, addXp, rollUpgrades, applyUpgrade, bergerSchedule, create, standings, heroMatches, finished, load, save, clear };
+  return { createRoster, updateInjuries, outcome, xpMultiplier, xpGain, addXp, rollUpgrades, applyUpgrade, bergerSchedule, create, standings, heroMatches, finished, load, save, clear };
 })();

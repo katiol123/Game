@@ -31,6 +31,9 @@ const App = (() => {
       isPlayer: !!state && state.playerId === id };
   }
 
+  // Медицинский крест с подсказкой о травмах (пусто, если травм нет)
+  const injCross = (h, cls = '') => (h.injuries && h.injuries.length
+    ? `<i class="inj ${cls}" data-tip="${injuryTip(h.injuries)}">✚</i>` : '');
   const ava = (h, cls = '') => `<div class="ava ${cls}" style="${avatarStyle(h)}"></div>`;
   const link = (h) => `<a href="#" class="hero-link" data-hero="${h.id}">${h.name}</a>`;
 
@@ -362,7 +365,7 @@ const App = (() => {
           <span>#</span><span class="t-who">Герой</span>
           <span title="Игры">И</span><span title="Победы">В</span><span title="Ничьи">Н</span><span title="Поражения">П</span>
           <span class="c-gd" title="Очки в матчах: набрано и пропущено">Камни ±</span>
-          <span title="Очки лиги">О</span><span class="c-form">Форма</span>
+          <span title="Очки лиги">О</span><span class="c-form">Форма</span><span class="c-inj"></span>
         </div>
         ${st.map((r, i) => {
           const h = hero(r.id);
@@ -375,6 +378,7 @@ const App = (() => {
             <span class="c-gd">${r.gf}<i>:</i>${r.ga}</span>
             <span class="pts">${r.pts}</span>
             <span class="c-form">${r.form.slice(-5).map((f) => `<i class="f-${f}">${FORM[f]}</i>`).join('') || '<i class="f-none">—</i>'}</span>
+            <span class="c-inj">${injCross(h)}</span>
           </div>`;
         }).join('')}
       </div>
@@ -510,7 +514,7 @@ const App = (() => {
         </div>
         <div class="hp-info">
           <div class="kicker hc">${h.title}</div>
-          <h1 class="glitch" data-text="${h.name}">${h.name}${h.isPlayer ? ' <em class="you-tag">ВЫ</em>' : ''}</h1>
+          <h1 class="glitch" data-text="${h.name}">${h.name}${h.isPlayer ? ' <em class="you-tag">ВЫ</em>' : ''}${injCross(h, 'big')}</h1>
           ${xpBlock(h)}
           ${statBars(h, true)}
           ${passiveBadge(h)}
@@ -683,6 +687,17 @@ const App = (() => {
     });
   }
 
+  // Травмы, полученные в матче
+  function injuryLine(H, A, res) {
+    const items = [];
+    [H, A].forEach((h, i) => (res.injuries[i] || []).forEach((id) => {
+      const inj = INJURY_BY_ID[id];
+      const e = roster[h.id].injuries.find((x) => x.id === id);
+      items.push(`<span style="--hc:${h.color}"><b>${h.name}</b>: ${inj.icon} ${inj.name}${e ? ` — ${e.left} ${boutsWord(e.left)}` : ''}</span>`);
+    }));
+    return items.length ? `<div class="res-inj"><i>✚</i> Травмы: ${items.join('')}</div>` : '';
+  }
+
   function showResult(H, A, res, last, xp = []) {
     return new Promise((resolve) => {
       const o = League.outcome(res);
@@ -700,6 +715,7 @@ const App = (() => {
           <span style="color:${A.color}">${A.name}</span>
         </div>
         <p class="res-sub">Очки за камни: ${res.home} : ${res.away}</p>
+        ${injuryLine(H, A, res)}
         ${xp.length ? xpRows(xp) : ''}
         <p class="countdown" id="resCount"></p>
         <button class="cta" id="resNext"><span>${last ? 'К турнирной таблице' : 'Следующий матч'}</span></button>`;
@@ -760,6 +776,9 @@ const App = (() => {
         const mul = multFor(h, opp);
         return { h, mul, g: League.addXp(roster[h.id], League.xpGain(m.result, side, mul.mult)) };
       });
+      // травмы: старые сокращаются на бой, полученные в этом бою добавляются на 2–4 боя
+      League.updateInjuries(roster[H.id], res.injuries[0]);
+      League.updateInjuries(roster[A.id], res.injuries[1]);
       League.save(state);
       await showResult(H, A, res, round.every((x) => x.result), xp);
       await resolveLevelUps([H.id, A.id]);

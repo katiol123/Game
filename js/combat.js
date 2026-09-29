@@ -32,6 +32,8 @@ const Combat = (() => {
       bleed: false,   // на бойце висит кровотечение (от Резака)
       aim: 0,         // стаки «Прицеливания» (Отмороз)
       snack: 0,       // стаки «Перекуса» (Шаурмен)
+      injuries: (hero.injuries || []).map((i) => i.id), // травмы, с которыми вышел на бой
+      newInjuries: [],                                  // травмы, полученные в этом бою
       touched: false, // получал или наносил урон в свой текущий ход
       score: 0,
       moves: 0,
@@ -97,6 +99,16 @@ const Combat = (() => {
 
     // «Хедшот»: любой удар с участием Отмороза сбрасывает «Прицеливание»
     for (const p of [att, def]) if (p.id === 'granny' && p.aim > 0) { ev.aimLost = p.aim; p.aim = 0; }
+
+    // Травма: шанс при пропущенном ударе (выше при крите), тип — из тех, которых ещё нет
+    if (!ev.dodged && rnd() < (ev.crit ? INJURY_CRIT_CHANCE : INJURY_CHANCE)) {
+      const has = new Set([...def.injuries, ...def.newInjuries]);
+      const free = INJURIES.filter((i) => !has.has(i.id));
+      if (free.length) {
+        ev.injury = free[Math.floor(rnd() * free.length)].id;
+        def.newInjuries.push(ev.injury);
+      }
+    }
 
     ev.ko = def.hp <= 0;
     return ev;

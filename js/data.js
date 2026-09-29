@@ -67,6 +67,32 @@ const UPGRADES = [
 ];
 const UPGRADE_BY_ID = Object.fromEntries(UPGRADES.map((u) => [u.id, u]));
 
+/*
+ * Травмы. Шанс при пропущенном ударе: 5%, при критическом — 33%.
+ * Травма действует сразу и ещё 2–4 следующих боя. Эффекты травм — позже.
+ */
+const INJURY_CHANCE = 0.05;
+const INJURY_CRIT_CHANCE = 0.33;
+const INJURY_DURATION = [2, 4];
+const INJURIES = [
+  { id: 'arm', icon: '🦾', name: 'Перелом руки' },
+  { id: 'leg', icon: '🦵', name: 'Перелом ноги' },
+  { id: 'concussion', icon: '💫', name: 'Сотрясение мозга' },
+  { id: 'rib', icon: '🩻', name: 'Перелом ребра' },
+  { id: 'nose', icon: '👃', name: 'Сломан нос' },
+  { id: 'teeth', icon: '🦷', name: 'Выбитые зубы' },
+];
+const INJURY_BY_ID = Object.fromEntries(INJURIES.map((i) => [i.id, i]));
+const boutsWord = (n) => (n % 10 === 1 && n % 100 !== 11 ? 'бой' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'боя' : 'боёв');
+// Текст подсказки к медицинскому кресту. list: [{ id, left }], left = null — получена в этом бою
+function injuryTip(list) {
+  return list.map((i) => {
+    const inj = INJURY_BY_ID[i.id];
+    const dur = i.left == null ? 'получена в этом бою' : `ещё ${i.left} ${boutsWord(i.left)}`;
+    return `${inj.icon} ${inj.name} — ${dur}`;
+  }).join('\n');
+}
+
 // Пассивные умения (механика — в combat.js)
 const PASSIVES = {
   dumpling: {

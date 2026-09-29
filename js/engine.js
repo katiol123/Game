@@ -777,6 +777,7 @@ const Engine = (() => {
       renderCharge(p, 0, true);
       if (p.charge.length > 1) renderCharge(p, 1, true);
       renderStatus(p);
+      renderInjuries(p);
     });
     $('matchInfo').textContent = info || '';
     $('log').innerHTML = '';
@@ -826,6 +827,14 @@ const Engine = (() => {
     if (p.aim) chips.push(`<span class="st-chip good" title="Прицеливание: ${p.aim * 7}% шанс крита ×2">🎯 ×${p.aim}</span>`);
     if (p.snack) chips.push(`<span class="st-chip good" title="Перекус: ${p.snack * 3}% шанс крита ×1,75">🌯 ×${p.snack}</span>`);
     p.el.querySelector('.status').innerHTML = chips.join('');
+  }
+
+  // Медицинский крест на карточке бойца: травмы, с которыми он вышел, и полученные в этом бою
+  function renderInjuries(p) {
+    const el = p.el.querySelector('.inj-cross');
+    const list = [...(p.hero.injuries || []), ...p.newInjuries.map((id) => ({ id, left: null }))];
+    el.hidden = !list.length;
+    el.dataset.tip = injuryTip(list);
   }
 
   // Всплывающая подпись над шкалой заряда: сколько очков перешло на следующий удар
@@ -896,6 +905,14 @@ const Engine = (() => {
     if (ev.bleedApplied) {
       cardPop(def, '🩸 Кровотечение!', 'bad', 250);
       log(`🩸 <b>${def.hero.name}</b> истекает кровью до конца боя`, att.hero.color);
+    }
+    if (ev.injury) {
+      const inj = INJURY_BY_ID[ev.injury];
+      restartClass(def.el, 'injured');
+      cardPop(def, `✚ ${inj.name}!`, 'injury', 350);
+      Sound.play('injury');
+      renderInjuries(def);
+      log(`✚ <b>${def.hero.name}</b> получает травму: ${inj.icon} ${inj.name}`, '#ff4b5c');
     }
     if (ev.drainPct > 0) {
       cardPop(def, `🔗 −${ev.drainPct}% заряда`, 'info', 250);
@@ -1137,6 +1154,7 @@ const Engine = (() => {
       maxHp: [a.maxHp, b.maxHp],
       moves: [a.moves, b.moves],
       combo: [a.maxCombo, b.maxCombo],
+      injuries: [a.newInjuries.slice(), b.newInjuries.slice()],
     });
   }
 
@@ -1200,6 +1218,7 @@ const Engine = (() => {
     g = r.grid;
     turn = r.turn;
     players.forEach((p) => {
+      renderInjuries(p);
       renderHp(p);
       p.charge.forEach((_, b) => renderCharge(p, b));
       renderStatus(p);

@@ -215,6 +215,12 @@ const Sound = (() => {
     },
 
     // --- бой ---
+    injury() {
+      noise(0.08, { vol: 0.45, from: 5000, to: 1200, q: 2 });
+      noise(0.06, { vol: 0.4, from: 3500, to: 900, q: 2, delay: 0.07 });
+      tone(90, 0.4, { type: 'sawtooth', vol: 0.12, slide: 45, delay: 0.05 });
+      [76, 72, 67].forEach((n, i) => tone(note(n), 0.25, { type: 'square', vol: 0.06, delay: 0.25 + i * 0.12 }));
+    },
     levelup() {
       [60, 64, 67, 72, 76, 79, 84].forEach((n, i) => tone(note(n), 0.18, { type: 'triangle', vol: 0.13, delay: i * 0.06 }));
       [72, 76, 79, 84].forEach((n) => tone(note(n), 0.9, { type: 'sine', vol: 0.09, delay: 0.45 }));

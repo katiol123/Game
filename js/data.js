@@ -68,12 +68,12 @@ const UPGRADES = [
 const UPGRADE_BY_ID = Object.fromEntries(UPGRADES.map((u) => [u.id, u]));
 
 /*
- * Травмы. Шанс при пропущенном ударе: 5%, при критическом — 33%.
- * Травма действует сразу и ещё 2–4 следующих боя. Эффекты травм — позже.
+ * Травмы. Шанс при пропущенном ударе: 3%, при критическом — 33%.
+ * Травма действует сразу и ещё 1–3 следующих боя. Эффекты травм — позже.
  */
-const INJURY_CHANCE = 0.05;
+const INJURY_CHANCE = 0.03;
 const INJURY_CRIT_CHANCE = 0.33;
-const INJURY_DURATION = [2, 4];
+const INJURY_DURATION = [1, 3];
 const INJURIES = [
   { id: 'arm', icon: '🦾', name: 'Перелом руки' },
   { id: 'leg', icon: '🦵', name: 'Перелом ноги' },

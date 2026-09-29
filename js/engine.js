@@ -797,10 +797,26 @@ const Engine = (() => {
   }
 
   // Шкала заряда атаки: сколько очков накоплено до следующего удара
-  function renderCharge(p) {
+  // instant — без плавного перехода (мгновенный сброс на остаток после удара)
+  function renderCharge(p, instant = false) {
     const el = p.el.querySelector('.charge');
-    el.querySelector('.charge-fill').style.width = Math.min(1, p.charge / p.cost) * 100 + '%';
+    const fill = el.querySelector('.charge-fill');
+    fill.style.transitionDuration = (0.25 / speed) + 's'; // анимация шкалы идёт с той же скоростью, что и игра
+    if (instant) fill.style.transition = 'none';
+    fill.style.width = Math.min(1, p.charge / p.cost) * 100 + '%';
     el.querySelector('.charge-txt').textContent = `${Math.min(p.charge, p.cost)} / ${p.cost}`;
+    if (instant) { void fill.offsetWidth; fill.style.transition = ''; }
+  }
+
+  // Всплывающая подпись над шкалой заряда: сколько очков перешло на следующий удар
+  function carryTag(p, amount) {
+    const tag = document.createElement('b');
+    tag.className = 'carry-tag';
+    tag.textContent = `+${amount} в запасе`;
+    tag.addEventListener('animationend', () => tag.remove(), { once: true });
+    const line = p.el.querySelector('.charge small');
+    line.querySelectorAll('.carry-tag').forEach((t) => t.remove());
+    line.append(tag);
   }
 
   const restartClass = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
@@ -847,15 +863,27 @@ const Engine = (() => {
     return id === gameId;
   }
 
-  // Начисляет заряд за очки и проводит все накопленные атаки
+  // Начисляет заряд за очки и проводит все накопленные атаки.
+  // Порядок: шкала дозаполняется до 100% и вспыхивает → пауза → вылетает удар,
+  // и в этот же момент шкала сбрасывается на остаток (излишек переходит на следующий удар).
   async function chargeAndStrike(p, pts) {
+    const id = gameId;
     const def = players[1 - players.indexOf(p)];
+    const bar = p.el.querySelector('.charge');
     p.charge += pts;
     renderCharge(p);
     while (p.charge >= p.cost && def.hp > 0) {
+      await sleep(320); // шкала доезжает до 100%
+      if (id !== gameId) return false;
+      restartClass(bar, 'full');
+      Sound.play('charged');
+      await sleep(260); // вспышка, короткая пауза
+      if (id !== gameId) return false;
       p.charge -= p.cost;
-      renderCharge(p);
-      if (!(await strike(p, def))) return false;
+      const hit = strike(p, def);
+      renderCharge(p, true);
+      if (p.charge > 0) carryTag(p, p.charge);
+      if (!(await hit)) return false;
     }
     return true;
   }
@@ -907,9 +935,11 @@ const Engine = (() => {
       else if (groups.some((g) => g.len >= 5)) banner('Потрясающе!', p.hero.color);
       else if (groups.some((g) => g.len === 4)) banner('Отлично!', p.hero.color);
 
+      // заряд начисляется в момент сжигания, параллельно с исчезновением и падением камней
+      const charging = chargeAndStrike(p, pts);
       await animateClear(set);
       await animateGravity();
-      if (!(await chargeAndStrike(p, pts)) || id !== gameId) return null;
+      if (!(await charging) || id !== gameId) return null;
       if (someoneKO()) break;
     }
     return { combo, total };

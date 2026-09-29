@@ -402,7 +402,17 @@ canvas { display: block; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0,
               linear-gradient(180deg, rgba(255, 255, 255, 0.35), transparent 45%); }
 .hp.low .hp-fill { animation: hpLow 0.8s ease-in-out infinite; }
 @keyframes hpLow { 50% { filter: brightness(1.6); box-shadow: 0 0 24px var(--hpc); } }
-.charge { margin: 2px 2px 4px; }
+.charge { position: relative; margin: 2px 2px 4px; }
+.charge.full .charge-bar { animation: chargeFull 0.45s ease-out; }
+@keyframes chargeFull {
+  0% { box-shadow: 0 0 0 0 var(--pc); filter: brightness(1); }
+  35% { box-shadow: 0 0 18px 4px var(--pc); filter: brightness(2.2); transform: scaleY(1.6); }
+  100% { box-shadow: 0 0 0 0 transparent; filter: brightness(1); }
+}
+.carry-tag { display: inline-block; margin-left: 9px; font-size: 11px; font-weight: 900; white-space: nowrap; pointer-events: none;
+  color: color-mix(in srgb, var(--pc) 60%, #fff); text-shadow: 0 0 8px var(--pc), 0 1px 0 #000; animation: carryTag 1.8s ease-out forwards; }
+@keyframes carryTag { 0% { opacity: 0; transform: scale(0.6); } 12% { opacity: 1; transform: scale(1.15); }
+  25% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
 .charge-bar { height: 7px; border-radius: 4px; overflow: hidden; background: rgba(255, 255, 255, 0.08); }
 .charge-fill { display: block; height: 100%; width: 0; border-radius: 4px; transition: width 0.3s ease-out;
   background: linear-gradient(90deg, color-mix(in srgb, var(--pc) 40%, #fff), var(--pc)); box-shadow: 0 0 10px var(--pc); }

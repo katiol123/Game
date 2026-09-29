@@ -215,6 +215,10 @@ const Sound = (() => {
     },
 
     // --- бой ---
+    charged() {
+      tone(note(84), 0.12, { type: 'triangle', vol: 0.16 });
+      tone(note(91), 0.2, { type: 'triangle', vol: 0.14, delay: 0.06 });
+    },
     strike() {
       noise(0.3, { vol: 0.2, from: 500, to: 4000, q: 1.5 });
       tone(300, 0.3, { type: 'sawtooth', vol: 0.06, slide: 900 });

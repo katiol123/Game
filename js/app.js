@@ -116,10 +116,12 @@ const App = (() => {
       const v = h.stats[s.key];
       const plus = h.bonus ? h.bonus[s.key] : 0;
       const k = Math.min(1, v / 20);
+      const b0 = Math.min(1, (v - plus) / 20); // где кончается базовое значение — дальше идёт прокачка
       return `<div class="stat">
         <span class="st-name">${s.icon} ${s.name}</span>
-        <div class="bar"><i style="--v:${animate ? 0 : k}" data-v="${k}"></i></div>
-        <b class="st-val" data-v="${v}">${animate ? 0 : v}</b><small>/20${plus ? ` <em class="st-bonus" title="Прокачка">+${plus}</em>` : ''}</small>
+        <div class="bar"><i style="--v:${animate ? 0 : k}" data-v="${k}"></i>${plus
+          ? `<i class="bn" style="--b0:${b0};--v:${animate ? 0 : k}" data-v="${k}" title="Прокачка +${plus}"></i>` : ''}</div>
+        <b class="st-val" data-v="${v}">${animate ? 0 : v}</b><small>/20${plus ? ` <em class="st-bonus" title="Прокачка">(+${plus})</em>` : ''}</small>
       </div>`;
     }).join('')}</div>
     <div class="combat">

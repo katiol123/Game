@@ -109,7 +109,12 @@ button:disabled { opacity: 0.45; cursor: default; transform: none; }
 
 /* ---------- stats bars ---------- */
 .stats { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
-.stat { display: grid; grid-template-columns: 150px 1fr 34px minmax(24px, auto); align-items: center; gap: 10px; }
+/* колонка «/20 (+N)» фиксированной ширины: бонус прокачки не сужает шкалу и её деления */
+.stat { display: grid; grid-template-columns: 150px 1fr 34px 62px; align-items: center; gap: 10px; }
+.stat small { white-space: nowrap; }
+/* часть шкалы, добавленная прокачкой */
+.bar i.bn { left: calc(var(--b0) * 100%); width: max(0%, calc((var(--v) - var(--b0)) * 100%)); border-radius: 0 6px 6px 0;
+  background: linear-gradient(90deg, #7dffb0, #3ddc84); box-shadow: 0 0 12px #3ddc84; }
 .st-name { font-size: 14px; font-weight: 600; }
 .bar { position: relative; height: 12px; border-radius: 6px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
 .bar i { position: absolute; inset: 0 auto 0 0; width: calc(var(--v) * 100%); border-radius: 6px;
@@ -536,6 +541,9 @@ canvas { display: block; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0,
 .inj-cross[hidden] { display: none; }
 .inj-cross[data-tip]:hover::after { right: 0; }
 #mp0 .inj-cross[data-tip]:hover::after { left: 0; right: auto; }
+/* карточка — свой слой (opacity, backdrop-filter), поле идёт следом в разметке и перекрывает подсказку:
+   на время наведения поднимаем карточку над полем */
+.player:hover { z-index: 20; }
 .inj-stamp { position: absolute; left: 50%; top: 38%; z-index: 4; pointer-events: none; font-size: 120px; font-weight: 900; line-height: 1;
   color: #ff2d44; text-shadow: 0 0 30px #ff2d44, 0 0 60px rgba(255, 45, 68, 0.6); animation: injuryCross 1.3s ease-out forwards; }
 @keyframes injuryCross {
@@ -775,7 +783,7 @@ canvas { display: block; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0,
   .tabs button { flex: 1; padding: 10px 8px; font-size: 14px; white-space: nowrap; }
   .t-name a { white-space: normal; font-size: 13px; line-height: 1.15; }
   .t-row .you-tag { display: none; }
-  .stat { grid-template-columns: 1fr 1.3fr 28px minmax(22px, auto); gap: 8px; }
+  .stat { grid-template-columns: 1fr 1.3fr 28px 56px; gap: 8px; }
   .st-name { font-size: 13px; }
   .hi-inner h2 { font-size: 28px; }
 }

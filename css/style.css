@@ -247,8 +247,12 @@ button:disabled { opacity: 0.45; cursor: default; transform: none; }
 .t-row.podium { background: linear-gradient(90deg, rgba(255, 255, 255, 0.09), var(--card) 60%); }
 .t-row.last { background: linear-gradient(90deg, rgba(255, 95, 109, 0.1), var(--card) 60%); }
 .t-row.me { border-color: rgba(255, 210, 31, 0.6); box-shadow: 0 0 22px rgba(255, 210, 31, 0.18); }
-.t-row.gain { animation: gain 1.6s ease 0.9s; }
-@keyframes gain { 30% { background: color-mix(in srgb, var(--hc) 30%, transparent); } }
+.t-row.gain { animation: gain 1.8s ease-in-out 1.5s; }
+@keyframes gain {
+  20%, 60% { background: color-mix(in srgb, var(--hc) 38%, rgba(255, 255, 255, 0.06));
+             box-shadow: 0 0 26px color-mix(in srgb, var(--hc) 65%, transparent), inset 0 0 0 1px var(--hc); }
+  40% { background: color-mix(in srgb, var(--hc) 14%, rgba(255, 255, 255, 0.06)); }
+}
 .gain-tag { position: absolute; right: -8px; top: -10px; font-family: "Rubik", sans-serif; font-size: 12px; font-weight: 900;
   color: var(--win); animation: gainTag 2.2s ease 1s both; }
 @keyframes gainTag { 0% { opacity: 0; transform: translateY(8px) scale(.5); } 20% { opacity: 1; transform: translateY(0) scale(1.2); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }

@@ -330,6 +330,7 @@ const App = (() => {
       });
     }
 
+    if (flip) pane.classList.remove('stagger');
     const st = League.standings(state);
     const anyPlayed = st.some((r) => r.p > 0);
     pane.innerHTML = `
@@ -376,7 +377,7 @@ const App = (() => {
           // одноразовая анимация: убираем после проигрыша, иначе она повторится
           // при каждом возврате на вкладку (display:none → block перезапускает CSS-анимации)
           tag.addEventListener('animationend', () => tag.remove(), { once: true });
-          setTimeout(() => row.classList.remove('gain'), 3000);
+          setTimeout(() => row.classList.remove('gain'), 4200);
         }
       });
     }
@@ -619,6 +620,7 @@ const App = (() => {
     busy = true;
     const r = state.round;
     const round = state.schedule[r];
+    Sound.setTrack('match');
 
     await guarded(() => blinds(() => {
       $('resultOverlay').classList.remove('show');
@@ -643,8 +645,12 @@ const App = (() => {
     League.save(state);
     selRound = Math.min(state.round, state.schedule.length - 1);
 
+    Sound.setTrack('menu');
     await guarded(() => blinds(() => {
       tab = 'table';
+      // без stagger-анимации появления строк: иначе при показе экрана и при перестройке
+      // таблицы строки исчезают и появляются заново, прежде чем начнётся перестановка
+      $('pane-table').classList.remove('stagger');
       syncTabs(true);
       renderHeader();
       show('league');

@@ -1,8 +1,9 @@
 'use strict';
 
 /* =========================================================
- *  Звук: фоновая музыка (зациклена) и синтезированные эффекты
- *  Sound.play('имя', параметры) · Sound.toggleMusic() · Sound.toggleSfx()
+ *  Звук: фоновая музыка (две зацикленные композиции) и синтезированные эффекты
+ *  Sound.play('имя', параметры) · Sound.setTrack('menu' | 'match')
+ *  Sound.toggleMusic() · Sound.toggleSfx()
  * ========================================================= */
 
 const Sound = (() => {
@@ -12,10 +13,50 @@ const Sound = (() => {
   const savePrefs = () => { try { localStorage.setItem(KEY, JSON.stringify(prefs)); } catch (e) { /* ignore */ } };
 
   const MUSIC_VOL = 0.35;
-  const music = new Audio('assets/audio/music.mp3');
-  music.loop = true;
-  music.preload = 'auto';
-  music.volume = MUSIC_VOL;
+  const FADE_MS = 900;
+  // menu — между турами, match — во время тура
+  const tracks = {};
+  for (const [name, src] of [['menu', 'assets/audio/menu.mp3'], ['match', 'assets/audio/match.mp3']]) {
+    const a = new Audio(src);
+    a.loop = true;
+    a.preload = 'auto';
+    a.volume = MUSIC_VOL;
+    tracks[name] = a;
+  }
+  let current = 'menu';
+  const music = () => tracks[current];
+
+  // Плавное изменение громкости; новая фейд-операция отменяет предыдущую на том же треке
+  const fades = new Map();
+  function fade(a, to, ms, done) {
+    cancelAnimationFrame(fades.get(a));
+    const from = a.volume;
+    const t0 = performance.now();
+    const step = (t) => {
+      const k = Math.min(1, (t - t0) / ms);
+      a.volume = Math.max(0, Math.min(1, from + (to - from) * k));
+      if (k < 1) fades.set(a, requestAnimationFrame(step));
+      else { fades.delete(a); if (done) done(); }
+    };
+    fades.set(a, requestAnimationFrame(step));
+  }
+
+  function startCurrent(fadeIn) {
+    const a = music();
+    if (fadeIn) a.volume = 0;
+    const p = a.play();
+    if (fadeIn) fade(a, MUSIC_VOL, FADE_MS);
+    return p;
+  }
+
+  function setTrack(name) {
+    if (!tracks[name] || name === current) return;
+    const prev = music();
+    current = name;
+    if (!prefs.music || !unlocked) { prev.pause(); return; }
+    fade(prev, 0, FADE_MS, () => prev.pause());
+    startCurrent(true).catch(() => {});
+  }
 
   let ctx = null;
   let master = null;
@@ -41,14 +82,14 @@ const Sound = (() => {
     unlocked = true;
     const c = ensureCtx();
     if (c && c.state === 'suspended') c.resume();
-    if (prefs.music) music.play().catch(() => { unlocked = false; });
+    if (prefs.music) startCurrent(true).catch(() => { unlocked = false; });
   }
   ['pointerdown', 'keydown', 'touchstart'].forEach((ev) =>
     window.addEventListener(ev, unlock, { capture: true, passive: true }));
 
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) music.pause();
-    else if (prefs.music && unlocked) music.play().catch(() => {});
+    if (document.hidden) music().pause();
+    else if (prefs.music && unlocked) music().play().catch(() => {});
   });
 
   /* ---------- синтез ---------- */
@@ -190,7 +231,8 @@ const Sound = (() => {
   function toggleMusic() {
     prefs.music = !prefs.music;
     savePrefs();
-    if (prefs.music) { unlocked = true; ensureCtx(); music.play().catch(() => {}); } else music.pause();
+    if (prefs.music) { unlocked = true; ensureCtx(); startCurrent(true).catch(() => {}); }
+    else Object.values(tracks).forEach((a) => a.pause());
     return prefs.music;
   }
 
@@ -202,11 +244,13 @@ const Sound = (() => {
 
   return {
     play,
+    setTrack,
     toggleMusic,
     toggleSfx,
     musicOn: () => prefs.music,
     sfxOn: () => prefs.sfx,
-    musicPlaying: () => !music.paused,
-    musicLoop: () => music.loop,
+    track: () => current,
+    musicPlaying: () => !music().paused,
+    musicLoop: () => music().loop,
   };
 })();

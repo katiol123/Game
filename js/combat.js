@@ -11,6 +11,9 @@ const Combat = (() => {
   const GEM = { red: 0, orange: 1, yellow: 2, green: 3, blue: 4, purple: 5 };
   const DUEL_MOVES = 3;          // «Дуэль на закате»: последние ходы каждого бойца
   const DUEL_ENEMY_FACTOR = 0.4; // доля урона соперника Пыли в дополнительных ударах
+  const SOFA_BASE_DODGE = 0.1;   // «Невозмутимость»: базовый шанс уворота
+  // «Два ствола»: множитель комбо для второй шкалы не выше cap, урон ударов со второй шкалы × dmgFactor
+  const TWO_BARRELS = { cap: 2, dmgFactor: 1 };
 
   const count = (g, t) => g.reduce((s, row) => s + row.reduce((k, x) => k + (x === t), 0), 0);
   // «количество камней цвета минус 10», не меньше нуля
@@ -37,11 +40,11 @@ const Combat = (() => {
   }
 
   // Куда идут очки шага каскада: [{ bar, pts }].
-  // pts — обычные очки шага, ptsCap — очки того же шага с множителем комбо не выше ×2.
+  // pts — обычные очки шага, base — очки того же шага без множителя комбо.
   // «Два ствола»: первая шкала заряжается как у всех, вторая — дополнительно от шагов с комбо ×2+.
-  function chargeTargets(p, combo, pts, ptsCap) {
+  function chargeTargets(p, combo, pts, base) {
     const t = [{ bar: 0, pts }];
-    if (p.id === 'goose' && combo >= 2) t.push({ bar: 1, pts: ptsCap });
+    if (p.id === 'goose' && combo >= 2) t.push({ bar: 1, pts: base * Math.min(combo, TWO_BARRELS.cap) });
     return t;
   }
 
@@ -60,10 +63,12 @@ const Combat = (() => {
   // идёт ли у бойца «Дуэль на закате» (p.moves уже учитывает текущий ход)
   const duelTurn = (players, p, moveCap) => duelOn(players) && p.moves > moveCap - DUEL_MOVES;
 
-  // Удар att по def. kind: 'charge' — от шкалы, 'ram' — «Таран», 'duel' — «Дуэль на закате»
+  // Удар att по def. kind: 'charge' — от шкалы, 'charge2' — от второй шкалы «Двух стволов»,
+  // 'ram' — «Таран», 'duel' — «Дуэль на закате»
   function hit(att, def, g, kind = 'charge', rnd = Math.random) {
     let dmg = att.dmg;
     if (kind === 'duel' && att.id !== 'dumpling') dmg = Math.ceil(att.dmg * DUEL_ENEMY_FACTOR);
+    if (kind === 'charge2') dmg = Math.ceil(att.dmg * TWO_BARRELS.dmgFactor);
     const ev = { kind, base: dmg, dmg: 0, crit: false, dodged: false, bleedApplied: false, drainPct: 0, aimLost: 0 };
 
     // криты: «Хедшот» (×2) и «Перекус» (×1,75)
@@ -74,7 +79,7 @@ const Combat = (() => {
     }
 
     // «Невозмутимость»: шанс полностью проигнорировать удар
-    if (def.id === 'sofa' && rnd() < Math.min(1, over10(g, GEM.purple) * 0.05)) ev.dodged = true;
+    if (def.id === 'sofa' && rnd() < Math.min(1, SOFA_BASE_DODGE + over10(g, GEM.purple) * 0.05)) ev.dodged = true;
 
     if (!ev.dodged) {
       ev.dmg = dmg;
@@ -115,5 +120,5 @@ const Combat = (() => {
     return null;
   }
 
-  return { GEM, DUEL_MOVES, fighter, chargeTargets, startTurn, duelOn, duelTurn, hit, lineOfFive, endTurn, count, over10 };
+  return { GEM, DUEL_MOVES, TWO_BARRELS, fighter, chargeTargets, startTurn, duelOn, duelTurn, hit, lineOfFive, endTurn, count, over10 };
 })();

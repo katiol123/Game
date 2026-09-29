@@ -172,7 +172,7 @@ const Engine = (() => {
       const pts = scoreGroups(groups, combo);
       score += pts;
       if (record) {
-        steps.push({ combo, pts, ptsCap: scoreGroups(groups, Math.min(combo, 2)), five: groups.filter((gr) => gr.len >= 5).length });
+        steps.push({ combo, pts, base: scoreGroups(groups, 1), five: groups.filter((gr) => gr.len >= 5).length });
       }
       cleared += set.size;
       for (const i of set) h[(i / COLS) | 0][i % COLS] = -1;
@@ -881,7 +881,7 @@ const Engine = (() => {
     orb.remove();
     if (id !== gameId) return false;
 
-    const tag = kind === 'ram' ? ' (таран)' : kind === 'duel' ? ' (дуэль)' : '';
+    const tag = kind === 'ram' ? ' (таран)' : kind === 'duel' ? ' (дуэль)' : kind === 'charge2' ? ' (2-й ствол)' : '';
     if (ev.dodged) {
       cardPop(def, 'Даже не моргнул!', 'info');
       Sound.play('dodge');
@@ -924,7 +924,7 @@ const Engine = (() => {
       p.charge[bar] -= p.cost;
       renderCharge(p, bar, true);
       if (p.charge[bar] > 0) carryTag(p, bar, p.charge[bar]);
-      if (!(await strike(p, def))) return false;
+      if (!(await strike(p, def, bar ? 'charge2' : 'charge'))) return false;
     }
     return true;
   }
@@ -998,7 +998,7 @@ const Engine = (() => {
       else if (groups.some((g) => g.len === 4)) banner('Отлично!', p.hero.color);
 
       // заряд начисляется в момент сжигания, параллельно с исчезновением и падением камней
-      const targets = Combat.chargeTargets(p, combo, pts, scoreGroups(groups, Math.min(combo, 2)));
+      const targets = Combat.chargeTargets(p, combo, pts, scoreGroups(groups, 1));
       // обе шкалы («Два ствола») заполняются сразу, удары идут по очереди
       targets.forEach((t) => { p.charge[t.bar] += t.pts; renderCharge(p, t.bar); });
       const charging = (async () => {
@@ -1151,9 +1151,9 @@ const Engine = (() => {
       p.maxCombo = Math.max(p.maxCombo, s.combo);
       g = s.grid;
       for (const step of s.steps) {
-        for (const tg of Combat.chargeTargets(p, step.combo, step.pts, step.ptsCap)) {
+        for (const tg of Combat.chargeTargets(p, step.combo, step.pts, step.base)) {
           p.charge[tg.bar] += tg.pts;
-          while (p.charge[tg.bar] >= p.cost && def.hp > 0) { p.charge[tg.bar] -= p.cost; Combat.hit(p, def, g, 'charge'); }
+          while (p.charge[tg.bar] >= p.cost && def.hp > 0) { p.charge[tg.bar] -= p.cost; Combat.hit(p, def, g, tg.bar ? 'charge2' : 'charge'); }
         }
         for (let k = 0; k < step.five && def.hp > 0; k++) {
           const r = Combat.lineOfFive(p, g);

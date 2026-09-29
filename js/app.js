@@ -637,18 +637,29 @@ const App = (() => {
     const pct = (v) => (v > 0 ? '+' : '−') + Math.abs(Math.round(v * 100)) + '%';
     const mulTag = (mul) => {
       if (!mul || Math.abs(mul.mult - 1) < 1e-9) return '';
-      const parts = [];
-      if (mul.place) parts.push(`место ${pct(mul.place)}`);
-      if (mul.level) parts.push(`уровень ${pct(mul.level)}`);
-      if (mul.mult <= XP_MIN_MULT && 1 + mul.place + mul.level < XP_MIN_MULT) parts.push('минимум ×0,3');
-      return ` <small class="xg-mul ${mul.mult < 1 ? 'down' : ''}" title="Разница с соперником: ${parts.join(', ')}">×${fmt(mul.mult)}</small>`;
+      return ` <small class="xg-mul ${mul.mult < 1 ? 'down' : ''}">×${fmt(mul.mult)}</small>`;
     };
-    return `<div class="xp-gain">${xp.map(({ h, g, mul }) => `
+    // Расшифровка множителя мелким шрифтом: база, бонусы и штрафы, итог
+    const why = (mul, base) => {
+      if (!mul) return '';
+      if (mul.concussed) return '<div class="xg-why"><span class="down">💫 Сотрясение мозга — опыт не начисляется</span></div>';
+      if (!base) return '';
+      const sign = (v) => `<span class="${v > 0 ? 'up' : 'down'}">${pct(v)}</span>`;
+      const parts = [`база ${base}`];
+      if (mul.place) parts.push(`место соперника ${sign(mul.place)}`);
+      if (mul.level) parts.push(`уровень соперника ${sign(mul.level)}`);
+      if (mul.dealt) parts.push(`<span class="hurt">✚ травмы ×${mul.dealt}</span> ${sign(mul.injury)}`);
+      if (mul.floored) parts.push(`<span class="down">минимум ×${fmt(XP_MIN_MULT)}</span>`);
+      parts.push(`итого ×${fmt(mul.mult)}`);
+      return `<div class="xg-why">${parts.join(' · ')}</div>`;
+    };
+    return `<div class="xp-gain">${xp.map(({ h, g, mul, base }) => `
       <div class="xg-row ${g.amount ? '' : 'zero'}" style="--hc:${h.color}">
         ${ava(h)}
         <div class="xg-main">
           <div class="xg-top"><b>${h.name}</b><span class="xg-lvl">Ур. <em>${g.before.level}</em></span>
             <span class="xg-amt">+${g.amount} опыта${g.amount ? mulTag(mul) : ''}</span></div>
+          ${why(mul, base)}
           <div class="xg-bar"><i style="width:${(g.before.xp / xpToNext(g.before.level)) * 100}%"></i></div>
           <div class="xg-num">${g.before.xp} / ${xpToNext(g.before.level)}</div>
         </div>
@@ -767,14 +778,18 @@ const App = (() => {
       // множитель опыта считается по таблице и уровням перед записью результата
       const st = League.standings(state);
       const place = (id) => st.findIndex((row) => row.id === id) + 1;
-      const multFor = (me, opp) => League.xpMultiplier(
+      // i — сторона бойца (0 — хозяева): травмы, нанесённые сопернику, и «Сотрясение мозга» (с прошлых боёв или из этого)
+      const multFor = (me, opp, i) => League.xpMultiplier(
         state.round > 0 ? place(me.id) - place(opp.id) : 0, // в первом туре места ещё условные
-        roster[opp.id].level - roster[me.id].level);
+        roster[opp.id].level - roster[me.id].level,
+        res.dealt[i],
+        roster[me.id].injuries.some((x) => x.id === 'concussion') || res.injuries[i].includes('concussion'));
       m.result = { home: res.home, away: res.away, winner: res.winner, ko: res.ko, crush: res.crush, hp: res.hp };
       // опыт за бой обоим бойцам
-      const xp = [[H, A, 'home'], [A, H, 'away']].map(([h, opp, side]) => {
-        const mul = multFor(h, opp);
-        return { h, mul, g: League.addXp(roster[h.id], League.xpGain(m.result, side, mul.mult)) };
+      const xp = [[H, A, 'home'], [A, H, 'away']].map(([h, opp, side], i) => {
+        const mul = multFor(h, opp, i);
+        const base = League.xpGain(m.result, side);
+        return { h, mul, base, g: League.addXp(roster[h.id], League.xpGain(m.result, side, mul.mult)) };
       });
       // травмы: старые сокращаются на бой, полученные в этом бою добавляются на 2–4 боя
       League.updateInjuries(roster[H.id], res.injuries[0]);

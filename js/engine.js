@@ -770,7 +770,8 @@ const Engine = (() => {
       el.querySelector('.dmg').textContent = p.dmg;
       el.querySelector('.hp-max').textContent = p.maxHp;
       el.querySelector('.charge.c2').hidden = p.charge.length < 2;
-      el.classList.remove('ko', 'hit', 'lunge');
+      el.classList.remove('ko', 'hit', 'lunge', 'injured');
+      el.querySelectorAll('.inj-stamp').forEach((x) => x.remove());
       el.querySelectorAll('.card-pop').forEach((x) => x.remove());
       p.el = el;
       renderHp(p, true);
@@ -822,7 +823,9 @@ const Engine = (() => {
   // Пассивка и текущие эффекты под именем бойца
   function renderStatus(p) {
     const ps = PASSIVES[p.id];
-    const chips = [`<span class="st-chip passive" title="${ps.desc}">${ps.icon} ${ps.name}</span>`];
+    const chips = [p.noPassive
+      ? `<span class="st-chip passive off" title="Отключена переломом ребра">${ps.icon} <s>${ps.name}</s></span>`
+      : `<span class="st-chip passive" title="${ps.desc}">${ps.icon} ${ps.name}</span>`];
     if (p.bleed) chips.push('<span class="st-chip bad" title="Кровотечение: в начале каждого хода (красных камней − 10) × 4 урона">🩸 Истекает кровью</span>');
     if (p.aim) chips.push(`<span class="st-chip good" title="Прицеливание: ${p.aim * 7}% шанс крита ×2">🎯 ×${p.aim}</span>`);
     if (p.snack) chips.push(`<span class="st-chip good" title="Перекус: ${p.snack * 3}% шанс крита ×1,75">🌯 ×${p.snack}</span>`);
@@ -858,7 +861,16 @@ const Engine = (() => {
     p.el.append(pop);
   }
 
-  const restartClass = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+  // Перезапускает CSS-анимацию через класс и снимает класс после неё: иначе класс остаётся навсегда
+  // и перебивает другие анимации карточки (из-за этого пропадала тряска при ударе)
+  function restartClass(el, cls, ms = 1400) {
+    el.classList.remove(cls);
+    void el.offsetWidth;
+    el.classList.add(cls);
+    const key = '_cls_' + cls;
+    clearTimeout(el[key]);
+    el[key] = setTimeout(() => el.classList.remove(cls), ms);
+  }
   const other = (p) => players[1 - players.indexOf(p)];
 
   function showKO(def, att) {
@@ -891,7 +903,11 @@ const Engine = (() => {
     if (id !== gameId) return false;
 
     const tag = kind === 'ram' ? ' (таран)' : kind === 'duel' ? ' (дуэль)' : kind === 'charge2' ? ' (2-й ствол)' : '';
-    if (ev.dodged) {
+    if (ev.missed) {
+      cardPop(def, '🦾 Промах!', 'info');
+      Sound.play('dodge');
+      log(`🦾 <b>${att.hero.name}</b> промахивается${tag} — перелом руки`, att.hero.color);
+    } else if (ev.dodged) {
       cardPop(def, 'Даже не моргнул!', 'info');
       Sound.play('dodge');
       log(`😐 <b>${def.hero.name}</b> даже не моргнул — удар${tag} ${att.hero.name} проигнорирован`, def.hero.color);
@@ -908,10 +924,19 @@ const Engine = (() => {
     }
     if (ev.injury) {
       const inj = INJURY_BY_ID[ev.injury];
-      restartClass(def.el, 'injured');
+      restartClass(def.el, 'hit');
+      const stamp = document.createElement('b');
+      stamp.className = 'inj-stamp';
+      stamp.textContent = '✚';
+      stamp.addEventListener('animationend', () => stamp.remove(), { once: true });
+      def.el.append(stamp);
       cardPop(def, `✚ ${inj.name}!`, 'injury', 350);
       Sound.play('injury');
       renderInjuries(def);
+      // эффекты травмы: макс. здоровье, цена атаки, обнулённый заряд, отключённая пассивка
+      def.el.querySelector('.hp-max').textContent = def.maxHp;
+      renderHp(def);
+      def.charge.forEach((_, b) => renderCharge(def, b, true));
       log(`✚ <b>${def.hero.name}</b> получает травму: ${inj.icon} ${inj.name}`, '#ff4b5c');
     }
     if (ev.drainPct > 0) {
@@ -999,7 +1024,9 @@ const Engine = (() => {
       const { groups, set } = findMatches(typesGrid());
       if (!groups.length) break;
       combo++;
-      const pts = scoreGroups(groups, combo);
+      const base = scoreGroups(groups, 1);
+      const mult = Combat.comboMult(p, combo); // «Сломанный нос» урезает множитель комбо
+      const pts = base * mult;
       const five = groups.filter((gr) => gr.len >= 5).length;
       total += pts;
       p.score += pts;
@@ -1010,12 +1037,12 @@ const Engine = (() => {
       for (const i of set) { sx += px(i % COLS); sy += px((i / COLS) | 0); }
       floatText(sx / set.size, sy / set.size, '+' + pts, combo > 1 ? '#fff38a' : '#ffffff', combo > 1);
       Sound.play('clear', { combo, size: Math.max(...groups.map((g) => g.len)) });
-      if (combo >= 2) { banner(`Комбо ×${combo}!`, p.hero.color); Sound.play('combo', { combo }); }
+      if (combo >= 2) { banner(mult < combo ? `Комбо ×${mult} 👃` : `Комбо ×${combo}!`, p.hero.color); Sound.play('combo', { combo }); }
       else if (five) banner('Потрясающе!', p.hero.color);
       else if (groups.some((g) => g.len === 4)) banner('Отлично!', p.hero.color);
 
       // заряд начисляется в момент сжигания, параллельно с исчезновением и падением камней
-      const targets = Combat.chargeTargets(p, combo, pts, scoreGroups(groups, 1));
+      const targets = Combat.chargeTargets(p, combo, base);
       // обе шкалы («Два ствола») заполняются сразу, удары идут по очереди
       targets.forEach((t) => { p.charge[t.bar] += t.pts; renderCharge(p, t.bar); });
       const charging = (async () => {
@@ -1054,6 +1081,20 @@ const Engine = (() => {
         if (st.ko) { showKO(p, def); continue; }
         await sleep(450);
         if (id !== gameId) return;
+      }
+      // «Сотрясение мозга»: ход пропущен, но засчитан
+      if (st && st.skip) {
+        restartClass(p.el, 'dazed', 1200);
+        cardPop(p, '💫 Пропускает ход', 'bad');
+        banner(`${p.hero.name} в нокдауне`, '#9aa0c8');
+        Sound.play('dodge');
+        log(`💫 <b>${p.hero.name}</b> приходит в себя после сотрясения и пропускает ход`, '#9aa0c8');
+        p.moves++;
+        turn = 1 - turn;
+        updateUI();
+        await sleep(1100);
+        if (id !== gameId) return;
+        continue;
       }
 
       const isHuman = !!p.hero.isPlayer;
@@ -1155,6 +1196,7 @@ const Engine = (() => {
       moves: [a.moves, b.moves],
       combo: [a.maxCombo, b.maxCombo],
       injuries: [a.newInjuries.slice(), b.newInjuries.slice()],
+      dealt: [a.injuriesDealt, b.injuriesDealt],
     });
   }
 
@@ -1167,17 +1209,21 @@ const Engine = (() => {
     let guard = 0;
     while (!ko() && ps.some((p) => p.moves < MOVE_CAP) && guard++ < 1000) {
       const p = ps[t], def = ps[1 - t];
-      if (p.startedAt !== p.moves) { p.startedAt = p.moves; Combat.startTurn(p, g); }
+      if (p.startedAt !== p.moves) {
+        p.startedAt = p.moves;
+        const st = Combat.startTurn(p, g);
+        if (st.skip) { p.moves++; t = 1 - t; continue; }
+      }
       if (ko()) break;
       const move = BRAINS[p.hero.model](g);
       if (!move) { g = randomGrid(); continue; }
       const s = simulate(g, move, true, true);
       p.moves++;
-      p.score += s.score;
       p.maxCombo = Math.max(p.maxCombo, s.combo);
       g = s.grid;
       for (const step of s.steps) {
-        for (const tg of Combat.chargeTargets(p, step.combo, step.pts, step.base)) {
+        p.score += step.base * Combat.comboMult(p, step.combo);
+        for (const tg of Combat.chargeTargets(p, step.combo, step.base)) {
           p.charge[tg.bar] += tg.pts;
           while (p.charge[tg.bar] >= p.cost && def.hp > 0) { p.charge[tg.bar] -= p.cost; Combat.hit(p, def, g, tg.bar ? 'charge2' : 'charge'); }
         }
@@ -1219,6 +1265,7 @@ const Engine = (() => {
     turn = r.turn;
     players.forEach((p) => {
       renderInjuries(p);
+      p.el.querySelector('.hp-max').textContent = p.maxHp;
       renderHp(p);
       p.charge.forEach((_, b) => renderCharge(p, b));
       renderStatus(p);
@@ -1250,7 +1297,8 @@ const Engine = (() => {
       selected = null;
       dragFrom = null;
       busySwap = false;
-      players = [home, away].map((hero) => ({ ...Combat.fighter(hero), shown: 0 }));
+      players = [home, away].map((hero) => Object.assign(Combat.fighter(hero), { shown: 0 }));
+      Combat.matchStart(players); // «Выбитые зубы» с прошлых боёв — соперник стартует с половиной заряда
       turn = 0; // хозяева ходят первыми
       current = { resolve, done: false };
       resize();

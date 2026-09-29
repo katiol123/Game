@@ -486,6 +486,8 @@ canvas { display: block; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0,
   background: radial-gradient(circle at 50% 30%, rgba(255, 60, 60, 0.55), transparent 70%); animation: fadeOut 0.5s forwards; }
 @keyframes hitShake { 15% { transform: translateX(-9px) rotate(-2deg); } 35% { transform: translateX(8px) rotate(2deg); }
   55% { transform: translateX(-5px); } 75% { transform: translateX(3px); } }
+.player.dazed .m-sprite-wrap { animation: dazed 1s ease-in-out; }
+@keyframes dazed { 20% { transform: rotate(-7deg); } 40% { transform: rotate(6deg); } 60% { transform: rotate(-4deg); } 80% { transform: rotate(2deg); } }
 .player.ko .m-sprite { filter: grayscale(1) brightness(0.55); transform: rotate(-12deg) translateY(10px); animation: none !important; }
 #mp1.ko .m-sprite { transform: scaleX(-1) rotate(-12deg) translateY(10px); }
 .player.ko::before { content: "K.O."; position: absolute; left: 50%; top: 70px; transform: translateX(-50%) rotate(-10deg); z-index: 2;
@@ -506,6 +508,7 @@ canvas { display: block; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0,
 .st-chip { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap; cursor: help;
   background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.15); }
 .st-chip.passive { border-color: color-mix(in srgb, var(--pc) 60%, transparent); background: color-mix(in srgb, var(--pc) 16%, transparent); }
+.st-chip.passive.off { opacity: 0.5; filter: grayscale(1); }
 .st-chip.bad { color: #ff9aa5; border-color: rgba(255, 60, 80, 0.6); background: rgba(255, 60, 80, 0.15); animation: hpLow 1.2s ease-in-out infinite; }
 .st-chip.good { color: #9ff0ff; border-color: rgba(80, 180, 255, 0.5); background: rgba(47, 134, 255, 0.15); }
 .charge.c2 .charge-fill { background: linear-gradient(90deg, #fff3a0, #ffd21f); box-shadow: 0 0 10px #ffd21f; }
@@ -533,9 +536,8 @@ canvas { display: block; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0,
 .inj-cross[hidden] { display: none; }
 .inj-cross[data-tip]:hover::after { right: 0; }
 #mp0 .inj-cross[data-tip]:hover::after { left: 0; right: auto; }
-.player.injured::after { content: "✚"; position: absolute; left: 50%; top: 38%; z-index: 4; pointer-events: none; font-size: 120px; font-weight: 900;
+.inj-stamp { position: absolute; left: 50%; top: 38%; z-index: 4; pointer-events: none; font-size: 120px; font-weight: 900; line-height: 1;
   color: #ff2d44; text-shadow: 0 0 30px #ff2d44, 0 0 60px rgba(255, 45, 68, 0.6); animation: injuryCross 1.3s ease-out forwards; }
-.player.injured { animation: hitShake 0.6s ease; }
 @keyframes injuryCross {
   0% { transform: translate(-50%, -50%) scale(3) rotate(-25deg); opacity: 0; }
   18% { transform: translate(-50%, -50%) scale(0.9) rotate(0); opacity: 1; }
@@ -618,6 +620,8 @@ canvas { display: block; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0,
 .xg-bar { height: 8px; margin-top: 4px; border-radius: 4px; overflow: hidden; background: rgba(255, 255, 255, 0.08); }
 .xg-bar i { display: block; height: 100%; border-radius: 4px; transition: width 0.7s cubic-bezier(.3, .8, .3, 1);
   background: linear-gradient(90deg, #7fe7ff, #2f86ff); box-shadow: 0 0 10px #2f86ff; }
+.xg-why { font-size: 10px; line-height: 1.35; color: var(--muted); margin-top: 3px; }
+.xg-why .up { color: #b6f5a0; } .xg-why .down { color: #ff9aa5; } .xg-why .hurt { color: #ffb86b; }
 .xg-num { font-size: 11px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
 .xg-up { position: absolute; right: 10px; bottom: 5px; font-family: var(--display); font-size: 13px; color: #ffd21f; opacity: 0;
   text-shadow: 0 0 10px #ff9a1a; pointer-events: none; }

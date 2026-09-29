@@ -57,6 +57,7 @@ const xpToNext = (level) => 50 + (level - 1) * 10;
 const XP_PLACE_BONUS = 0.1;
 const XP_LEVEL_BONUS = 0.1;
 const XP_MIN_MULT = 0.3;
+const XP_INJURY_BONUS = 0.3; // +30% базовой награды за каждую травму, нанесённую сопернику
 
 // Карточки улучшений при повышении уровня: из всего набора выпадают 3 разные случайные.
 // stat — какую характеристику улучшает, amount — на сколько, apply — меняет прокачку героя. ИИ выбирает карточку случайно.
@@ -69,18 +70,18 @@ const UPGRADE_BY_ID = Object.fromEntries(UPGRADES.map((u) => [u.id, u]));
 
 /*
  * Травмы. Шанс при пропущенном ударе: 3%, при критическом — 33%.
- * Травма действует сразу и ещё 1–3 следующих боя. Эффекты травм — позже.
+ * Травма действует сразу и ещё 1–3 следующих боя. Механика эффектов — в combat.js.
  */
 const INJURY_CHANCE = 0.03;
 const INJURY_CRIT_CHANCE = 0.33;
 const INJURY_DURATION = [1, 3];
 const INJURIES = [
-  { id: 'arm', icon: '🦾', name: 'Перелом руки' },
-  { id: 'leg', icon: '🦵', name: 'Перелом ноги' },
-  { id: 'concussion', icon: '💫', name: 'Сотрясение мозга' },
-  { id: 'rib', icon: '🩻', name: 'Перелом ребра' },
-  { id: 'nose', icon: '👃', name: 'Сломан нос' },
-  { id: 'teeth', icon: '🦷', name: 'Выбитые зубы' },
+  { id: 'arm', icon: '🦾', name: 'Перелом руки', desc: '(3 × красных камней) % шанс промахнуться ударом' },
+  { id: 'leg', icon: '🦵', name: 'Перелом ноги', desc: 'ловкость −50%' },
+  { id: 'concussion', icon: '💫', name: 'Сотрясение мозга', desc: '(2 × красных камней) % шанс пропустить ход, опыт за бой не начисляется' },
+  { id: 'rib', icon: '🩻', name: 'Перелом ребра', desc: 'пассивка отключена, макс. здоровье −20%' },
+  { id: 'nose', icon: '👃', name: 'Сломан нос', desc: 'множитель комбо на 1 меньше (×2 → ×1, ×3 → ×2…)' },
+  { id: 'teeth', icon: '🦷', name: 'Выбитые зубы', desc: 'удар — крит, заряд обнулён; в следующих боях соперник начинает с половиной заряда' },
 ];
 const INJURY_BY_ID = Object.fromEntries(INJURIES.map((i) => [i.id, i]));
 const boutsWord = (n) => (n % 10 === 1 && n % 100 !== 11 ? 'бой' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'боя' : 'боёв');
@@ -89,7 +90,7 @@ function injuryTip(list) {
   return list.map((i) => {
     const inj = INJURY_BY_ID[i.id];
     const dur = i.left == null ? 'получена в этом бою' : `ещё ${i.left} ${boutsWord(i.left)}`;
-    return `${inj.icon} ${inj.name} — ${dur}`;
+    return `${inj.icon} ${inj.name} — ${dur}\n    ${inj.desc}`;
   }).join('\n');
 }
 

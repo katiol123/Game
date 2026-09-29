@@ -53,12 +53,17 @@ const League = (() => {
     return e.injuries;
   }
 
-  // Множитель опыта по разнице с соперником.
-  // placeDiff — на сколько мест соперник выше (отрицательное — ниже), levelDiff — на сколько уровней выше.
-  function xpMultiplier(placeDiff, levelDiff) {
+  // Множитель опыта: разница с соперником и травмы.
+  // placeDiff — на сколько мест соперник выше (отрицательное — ниже), levelDiff — на сколько уровней выше,
+  // dealt — сколько травм нанесено сопернику (+30% за каждую), concussed — «Сотрясение мозга»: опыта нет.
+  function xpMultiplier(placeDiff, levelDiff, dealt = 0, concussed = false) {
     const place = placeDiff * XP_PLACE_BONUS;
     const level = levelDiff * XP_LEVEL_BONUS;
-    return { mult: Math.max(XP_MIN_MULT, 1 + place + level), place, level };
+    const injury = dealt * XP_INJURY_BONUS;
+    const raw = 1 + place + level + injury;
+    const floored = raw < XP_MIN_MULT;
+    const mult = concussed ? 0 : Math.max(XP_MIN_MULT, raw);
+    return { mult, place, level, injury, dealt, floored, concussed };
   }
 
   // Сколько опыта получает сторона ('home' | 'away') за матч; mult — множитель за соперника

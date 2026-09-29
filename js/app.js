@@ -594,6 +594,8 @@ const App = (() => {
         <span class="xp-lvl">${tr('Уровень', 'Level')} <b>${h.level}</b></span>
         <span class="xp-num"><b>${h.xp}</b> / ${need} ${tr('опыта', 'XP')}</span>
       </div>
+      <div class="xp-guard" title="${tr('Шанс, что каждое из 2 очков, отнимаемых травмой, уцелеет. +12% за уровень, максимум 90%',
+        'Chance that each of the 2 points an injury takes is kept. +12% per level, max 90%')}">🪨 ${tr('Закалка', 'Hardening')}: <b>${Math.round(injuryGuard(h.level) * 100)}%</b></div>
       <div class="xp-bar"><i style="--x:0" data-x="${h.xp / need}"></i></div>
       ${pickList ? `<div class="xp-picks"><small>${tr('Улучшения', 'Upgrades')}:</small>${pickList}</div>` : ''}
     </div>`;
@@ -721,7 +723,11 @@ const App = (() => {
       const l = lost[i];
       if (!l) return '';
       const parts = STATS.filter((st) => l[st.key]).map((st) => `${st.icon} ${st.name} −${l[st.key]}`);
-      return parts.length ? `<span class="res-weak" style="--hc:${h.color}"><b>${h.name}</b> ${tr('ослаб', 'weakened')}: ${parts.join(', ')}</span>` : '';
+      const all = l.saved + STATS.reduce((n, st) => n + l[st.key], 0);
+      const guard = l.saved ? `<em class="res-guard">🪨 ${tr(`закалка уберегла ${l.saved} из ${all}`, `hardening saved ${l.saved} of ${all}`)}</em>` : '';
+      if (!parts.length && !guard) return '';
+      return `<span class="res-weak" style="--hc:${h.color}"><b>${h.name}</b> ${parts.length
+        ? `${tr('ослаб', 'weakened')}: ${parts.join(', ')}` : tr('не ослаб', 'not weakened')}${guard ? ` · ${guard}` : ''}</span>`;
     }).join('');
     return items.length ? `<div class="res-inj"><i>✚</i> ${tr('Травмы', 'Injuries')}: ${items.join('')}${weak}</div>` : '';
   }

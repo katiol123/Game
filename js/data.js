@@ -96,6 +96,10 @@ const UPGRADE_BY_ID = Object.fromEntries([...UPGRADES, ...SPECIAL_UPGRADES].map(
 const INJURY_CHANCE = 0.03;
 const INJURY_CRIT_CHANCE = 0.33;
 const INJURY_DURATION = [1, 3];
+// «Закалка»: каждое из 2 очков, которые травма отнимает у характеристик, не теряется с шансом
+// (уровень − 1) × perLevel, но не больше max. Чем опытнее боец, тем труднее его сломать.
+const INJURY_GUARD = { perLevel: 0.12, max: 0.9 };
+const injuryGuard = (level) => Math.min(INJURY_GUARD.max, Math.max(0, (level - 1) * INJURY_GUARD.perLevel));
 const INJURIES = [
   { id: 'arm', icon: '🦾', name: T('Перелом руки', 'Broken Arm'), desc: T('(3 × красных камней) % шанс промахнуться ударом', '(3 × red gems) % chance to miss a strike') },
   { id: 'leg', icon: '🦵', name: T('Перелом ноги', 'Broken Leg'), desc: T('ловкость −50%', 'Agility −50%') },

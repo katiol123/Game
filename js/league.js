@@ -106,19 +106,23 @@ const League = (() => {
 
   // Травма ослабляет: за каждую полученную в бою травму −2 очка случайных характеристик
   // (оба в одну или по одному в разные), но характеристика не опускается ниже 1.
-  // Возвращает { str: n, agi: n, end: n } — насколько уменьшилась каждая.
+  // «Закалка» (injuryGuard в data.js): каждое очко может уцелеть с шансом, растущим с уровнем.
+  // Возвращает { str, agi, end, saved } — насколько уменьшилась каждая и сколько очков уберегла закалка.
   const INJURY_STAT_LOSS = 2;
   function injuryPenalty(e, id, injuries) {
     const base = HERO_BY_ID[id].stats;
     const lost = { str: 0, agi: 0, end: 0 };
+    let saved = 0;
+    const guard = injuryGuard(e.level);
     for (let k = 0; k < injuries * INJURY_STAT_LOSS; k++) {
+      if (Math.random() < guard) { saved++; continue; }
       const can = Object.keys(lost).filter((s) => base[s] + e.bonus[s] > 1);
       if (!can.length) break;
       const s = can[rnd(can.length)];
       e.bonus[s]--;
       lost[s]++;
     }
-    return lost;
+    return { ...lost, saved };
   }
 
   function applyUpgrade(e, up) {

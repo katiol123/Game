@@ -47,6 +47,7 @@ const App = (() => {
   async function portal(x, y, color, swap) {
     const el = document.createElement('div');
     el.className = 'fx-portal';
+    Sound.play('portal');
     el.style.setProperty('--pc', color);
     el.style.setProperty('--px', x + 'px');
     el.style.setProperty('--py', y + 'px');
@@ -68,6 +69,7 @@ const App = (() => {
   async function blinds(swap, reverse = false) {
     const el = document.createElement('div');
     el.className = 'fx-blinds';
+    Sound.play('blinds');
     const order = reverse ? HEROES.slice().reverse() : HEROES;
     el.innerHTML = order.map((h) => `<i style="--hc:${h.color}"></i>`).join('') +
       '<div class="fx-logo">◆ ◆ ◆</div>';
@@ -208,6 +210,7 @@ const App = (() => {
   }
 
   function step(delta) {
+    Sound.play('whoosh');
     sel = (sel + delta + N) % N;
     layoutCarousel();
     renderInfo(delta);
@@ -222,6 +225,7 @@ const App = (() => {
   function choose(e) {
     guarded(async () => {
       const h = HEROES[sel];
+      Sound.play('select');
       state = League.create(h.id, roster);
       League.save(state);
       selRound = 0;
@@ -287,6 +291,7 @@ const App = (() => {
   async function switchTab(t) {
     if (t === tab || transitioning) return;
     transitioning = true;
+    Sound.play('tab');
     const from = $('pane-' + tab), to = $('pane-' + t);
     const dir = t === 'schedule' ? 1 : -1;
     tab = t;
@@ -362,6 +367,7 @@ const App = (() => {
           { transform: 'translateY(0)', zIndex: 5 },
         ], { duration: 1100, delay: 250 + i * 40, easing: 'cubic-bezier(.5,-0.3,.3,1.3)', fill: 'backwards' });
         if (gained > 0) {
+          setTimeout(() => Sound.play('gain'), 1000 + i * 120);
           row.classList.add('gain');
           const tag = document.createElement('b');
           tag.className = 'gain-tag';
@@ -433,6 +439,7 @@ const App = (() => {
 
   async function pickRound(r) {
     if (r === selRound) return;
+    Sound.play('tick');
     const dir = r > selRound ? 1 : -1;
     selRound = r;
     document.querySelectorAll('.rs-chip').forEach((b) => b.classList.toggle('sel', +b.dataset.r === r));
@@ -555,6 +562,7 @@ const App = (() => {
     vs.className = 'vs';
     void vs.offsetWidth;
     vs.className = 'vs show';
+    Sound.play('vs');
     await wait(1900 / Math.min(2, Engine.getSpeed()));
   }
 
@@ -581,6 +589,7 @@ const App = (() => {
         <p class="countdown" id="resCount"></p>
         <button class="cta" id="resNext"><span>${last ? 'К турнирной таблице' : 'Следующий матч'}</span></button>`;
       $('resultOverlay').classList.add('show');
+      Sound.play(w ? 'win' : 'draw');
 
       let left = 6;
       let timer = null;
@@ -651,6 +660,7 @@ const App = (() => {
     const myPlace = st.findIndex((r) => r.id === state.playerId) + 1;
     const el = document.createElement('div');
     el.className = 'champ';
+    Sound.play('champion');
     el.style.setProperty('--hc', champ.color);
     const colors = HEROES.map((h) => h.color);
     el.innerHTML = `
@@ -721,6 +731,18 @@ const App = (() => {
       const b = e.target.closest('button');
       if (b) switchTab(b.dataset.tab);
     });
+
+    document.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (b && !b.matches('#chooseBtn, #tabs button, .rs-chip, .nav, #dots button, #playBtn, .audio-ctl button')) Sound.play('click');
+    });
+    const syncAudioBtns = () => {
+      $('musicBtn').classList.toggle('off', !Sound.musicOn());
+      $('sfxBtn').classList.toggle('off', !Sound.sfxOn());
+    };
+    $('musicBtn').addEventListener('click', () => { Sound.toggleMusic(); syncAudioBtns(); });
+    $('sfxBtn').addEventListener('click', () => { if (Sound.toggleSfx()) Sound.play('click'); syncAudioBtns(); });
+    syncAudioBtns();
 
     $('pauseBtn').addEventListener('click', () => setPaused(!Engine.isPaused()));
     $('skipBtn').addEventListener('click', () => { setPaused(false); Engine.skip(); });

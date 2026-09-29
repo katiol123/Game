@@ -576,6 +576,7 @@ const Engine = (() => {
     const ax = a.x, ay = a.y, bx = b.x, by = b.y;
     const dx = bx - ax, dy = by - ay;
     a.z = 2; b.z = 1;
+    Sound.play('swap');
     return tween(300, (e, t) => {
       const arc = Math.sin(Math.PI * t) * 0.25;
       a.x = ax + dx * e - dy * arc; a.y = ay + dy * e + dx * arc;
@@ -627,13 +628,13 @@ const Engine = (() => {
       if (spawn) { g.a = Math.min(1, e * 2.2); g.s = 0.6 + 0.4 * Math.min(1, e * 1.6); }
       g.sx = 1 - 0.1 * e;
       g.sy = 1 + 0.12 * e;
-    }, { delay, easing: ease.inQuad }).then(() => tween(300, (e, t) => {
+    }, { delay, easing: ease.inQuad }).then(() => { Sound.play('land'); return tween(300, (e, t) => {
       const w = Math.cos(t * Math.PI * 3) * (1 - t);
       g.y = toY - Math.max(0, Math.sin(t * Math.PI * 2)) * 0.08 * (1 - t);
       g.sx = 1 + 0.18 * w;
       g.sy = 1 - 0.18 * w;
       g.a = 1; g.s = 1;
-    })).then(() => { g.y = toY; g.sx = g.sy = 1; });
+    }); }).then(() => { g.y = toY; g.sx = g.sy = 1; });
   }
 
   function animateGravity() {
@@ -678,6 +679,7 @@ const Engine = (() => {
   }
 
   function animateShuffle() {
+    Sound.play('shuffle');
     const list = [];
     for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) list.push(board[r][c]);
     let arrangement = null;
@@ -794,7 +796,8 @@ const Engine = (() => {
       let sx = 0, sy = 0;
       for (const i of set) { sx += px(i % COLS); sy += px((i / COLS) | 0); }
       floatText(sx / set.size, sy / set.size, '+' + pts, combo > 1 ? '#fff38a' : '#ffffff', combo > 1);
-      if (combo >= 2) banner(`Комбо ×${combo}!`, p.hero.color);
+      Sound.play('clear', { combo, size: Math.max(...groups.map((g) => g.len)) });
+      if (combo >= 2) { banner(`Комбо ×${combo}!`, p.hero.color); Sound.play('combo', { combo }); }
       else if (groups.some((g) => g.len >= 5)) banner('Потрясающе!', p.hero.color);
       else if (groups.some((g) => g.len === 4)) banner('Отлично!', p.hero.color);
 
@@ -859,6 +862,7 @@ const Engine = (() => {
       if (board[gy] && board[gy][gx]) burst(board[gy][gx]);
     }
     banner(w ? `Победа: ${w.hero.name}!` : 'Ничья!', w ? w.hero.color : '#ffd21f');
+    Sound.play('matchEnd');
     await sleep(1400);
     if (id !== gameId) return;
     const cur = current;
@@ -928,6 +932,7 @@ const Engine = (() => {
       animateIntro().then(() => {
         if (id !== gameId) return;
         banner(`Первым ходит ${home.name}`, home.color);
+        Sound.play('whistle');
         return sleep(900);
       }).then(() => {
         if (id === gameId) runMatch(id);

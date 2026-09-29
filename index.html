@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Лига Шести Камней</title>
+  <title>Six Stones League</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet" />
@@ -17,19 +17,39 @@
     <div class="grid-floor"></div>
   </div>
 
+  <!-- ============ СТАРТОВОЕ МЕНЮ ============ -->
+  <section class="screen" id="scr-menu">
+    <div class="menu-glow"></div>
+    <div class="menu-heroes" id="menuHeroes"></div>
+    <div class="menu-box">
+      <div class="menu-gems"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="kicker" data-en="Match-3 fighting league">Лига боёв «три в ряд»</div>
+      <h1 class="menu-title" id="menuTitle" data-en="Six Stones League">Лига Шести Камней</h1>
+      <div class="menu-lang">
+        <small data-en="Language">Язык</small>
+        <div class="lang-switch" id="langSwitch">
+          <button data-lang="en">🇬🇧 English</button>
+          <button data-lang="ru">🇷🇺 Русский</button>
+          <span class="lang-ink"></span>
+        </div>
+      </div>
+      <button class="cta menu-start" id="startBtn"><span data-en="▶ Start">▶ Старт</span></button>
+    </div>
+  </section>
+
   <!-- ============ ВЫБОР ГЕРОЯ ============ -->
   <section class="screen" id="scr-select">
     <div class="sel-glow" id="selGlow"></div>
     <header class="sel-head">
-      <div class="kicker">Лига Шести Камней · сезон I</div>
-      <h1>Выбери своего героя</h1>
+      <div class="kicker" data-en="Six Stones League · Season I">Лига Шести Камней · сезон I</div>
+      <h1 data-en="Choose your hero">Выбери своего героя</h1>
     </header>
 
     <div class="sel-body">
       <div class="carousel" id="carousel">
         <div class="track" id="track"></div>
-        <button class="nav prev" id="prevBtn" aria-label="Предыдущий">‹</button>
-        <button class="nav next" id="nextBtn" aria-label="Следующий">›</button>
+        <button class="nav prev" id="prevBtn" aria-label="Предыдущий" data-en-label="Previous">‹</button>
+        <button class="nav next" id="nextBtn" aria-label="Следующий" data-en-label="Next">›</button>
       </div>
 
       <div class="hero-info" id="heroInfo">
@@ -39,8 +59,8 @@
 
     <div class="dots" id="dots"></div>
     <div class="sel-actions">
-      <button class="cta" id="chooseBtn"><span>Выбрать героя</span></button>
-      <button class="ghost" id="spectateBtn">👁 Режим зрителя</button>
+      <button class="cta" id="chooseBtn"><span data-en="Choose hero">Выбрать героя</span></button>
+      <button class="ghost" id="spectateBtn" data-en="👁 Spectator mode">👁 Режим зрителя</button>
     </div>
   </section>
 
@@ -48,20 +68,20 @@
   <section class="screen" id="scr-league">
     <header class="league-head">
       <div class="lh-left">
-        <div class="kicker">Лига Шести Камней</div>
-        <h1 class="lh-title">Сезон I</h1>
+        <div class="kicker" data-en="Six Stones League">Лига Шести Камней</div>
+        <h1 class="lh-title" data-en="Season I">Сезон I</h1>
         <div class="lh-sub" id="tourInfo"></div>
       </div>
       <div class="lh-me" id="meChip"></div>
       <div class="lh-actions">
-        <button class="cta play" id="playBtn"><span>▶ Играть</span></button>
-        <button class="ghost" id="newBtn">↺ Новый турнир</button>
+        <button class="cta play" id="playBtn"><span data-en="▶ Play">▶ Играть</span></button>
+        <button class="ghost" id="newBtn" data-en="↺ New tournament">↺ Новый турнир</button>
       </div>
     </header>
 
     <nav class="tabs" id="tabs">
-      <button data-tab="table" class="active">Турнирная таблица</button>
-      <button data-tab="schedule">Расписание</button>
+      <button data-tab="table" class="active" data-en="Standings">Турнирная таблица</button>
+      <button data-tab="schedule" data-en="Schedule">Расписание</button>
       <span class="tab-ink" id="tabInk"></span>
     </nav>
 
@@ -73,7 +93,7 @@
 
   <!-- ============ СТРАНИЦА ГЕРОЯ ============ -->
   <section class="screen" id="scr-hero">
-    <button class="ghost back" id="heroBack">← Назад</button>
+    <button class="ghost back" id="heroBack" data-en="← Back">← Назад</button>
     <div class="hero-page" id="heroPage"></div>
   </section>
 
@@ -84,10 +104,10 @@
     </header>
     <main class="match-main">
       <section class="player" id="mp0">
-        <div class="m-sprite-wrap"><img class="m-sprite" alt="" /><div class="dmg-badge" title="Урон за удар">⚔ <b class="dmg">0</b></div><div class="inj-cross" hidden>✚</div></div>
+        <div class="m-sprite-wrap"><img class="m-sprite" alt="" /><div class="dmg-badge" title="Урон за удар" data-en-title="Damage per strike">⚔ <b class="dmg">0</b></div><div class="inj-cross" hidden>✚</div></div>
         <div class="side"></div>
         <div class="name"></div>
-        <div class="you" hidden>ВЫ</div>
+        <div class="you" hidden data-en="YOU">ВЫ</div>
         <div class="status"></div>
         <div class="hp">
           <div class="hp-top"><span>❤</span><b class="hp-val">0</b><small>/ <span class="hp-max">0</span></small></div>
@@ -99,11 +119,11 @@
         </div>
         <div class="charge c2" hidden>
           <div class="charge-bar"><i class="charge-fill"></i></div>
-          <small>🔫 2-й ствол (комбо) <span class="charge-txt">0 / 0</span></small>
+          <small>🔫 <span data-en="2nd barrel (combo)">2-й ствол (комбо)</span> <span class="charge-txt">0 / 0</span></small>
         </div>
         <div class="score">0</div>
         <div class="meta">
-          <span>Ходов: <b class="moves">0</b> · макс. комбо: <b class="combo">0</b></span>
+          <span><span data-en="Moves">Ходов</span>: <b class="moves">0</b> · <span data-en="max combo">макс. комбо</span>: <b class="combo">0</b></span>
         </div>
         <div class="thinking"><i></i><i></i><i></i></div>
       </section>
@@ -117,10 +137,10 @@
       </div>
 
       <section class="player" id="mp1">
-        <div class="m-sprite-wrap"><img class="m-sprite" alt="" /><div class="dmg-badge" title="Урон за удар">⚔ <b class="dmg">0</b></div><div class="inj-cross" hidden>✚</div></div>
+        <div class="m-sprite-wrap"><img class="m-sprite" alt="" /><div class="dmg-badge" title="Урон за удар" data-en-title="Damage per strike">⚔ <b class="dmg">0</b></div><div class="inj-cross" hidden>✚</div></div>
         <div class="side"></div>
         <div class="name"></div>
-        <div class="you" hidden>ВЫ</div>
+        <div class="you" hidden data-en="YOU">ВЫ</div>
         <div class="status"></div>
         <div class="hp">
           <div class="hp-top"><span>❤</span><b class="hp-val">0</b><small>/ <span class="hp-max">0</span></small></div>
@@ -132,11 +152,11 @@
         </div>
         <div class="charge c2" hidden>
           <div class="charge-bar"><i class="charge-fill"></i></div>
-          <small>🔫 2-й ствол (комбо) <span class="charge-txt">0 / 0</span></small>
+          <small>🔫 <span data-en="2nd barrel (combo)">2-й ствол (комбо)</span> <span class="charge-txt">0 / 0</span></small>
         </div>
         <div class="score">0</div>
         <div class="meta">
-          <span>Ходов: <b class="moves">0</b> · макс. комбо: <b class="combo">0</b></span>
+          <span><span data-en="Moves">Ходов</span>: <b class="moves">0</b> · <span data-en="max combo">макс. комбо</span>: <b class="combo">0</b></span>
         </div>
         <div class="thinking"><i></i><i></i><i></i></div>
       </section>
@@ -144,15 +164,15 @@
 
     <footer class="match-foot">
       <div class="controls">
-        <button id="pauseBtn">⏸ Пауза</button>
+        <button id="pauseBtn" data-en="⏸ Pause">⏸ Пауза</button>
         <div class="speed" id="speed">
-          <span>Скорость:</span>
+          <span data-en="Speed:">Скорость:</span>
           <button data-speed="0.5">0.5×</button>
           <button data-speed="1" class="active">1×</button>
           <button data-speed="2">2×</button>
           <button data-speed="4">4×</button>
         </div>
-        <button id="skipBtn">⏭ Досчитать матч</button>
+        <button id="skipBtn" data-en="⏭ Finish match">⏭ Досчитать матч</button>
       </div>
       <ul class="log" id="log"></ul>
     </footer>
@@ -167,10 +187,11 @@
   </div>
   <div id="fx"></div>
   <div class="audio-ctl">
-    <button id="musicBtn" title="Музыка вкл/выкл" aria-label="Музыка">🎵</button>
-    <button id="sfxBtn" title="Звуки вкл/выкл" aria-label="Звуки">🔊</button>
+    <button id="musicBtn" title="Музыка вкл/выкл" aria-label="Музыка" data-en-title="Music on/off" data-en-label="Music">🎵</button>
+    <button id="sfxBtn" title="Звуки вкл/выкл" aria-label="Звуки" data-en-title="Sounds on/off" data-en-label="Sounds">🔊</button>
   </div>
 
+  <script src="js/i18n.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/data.js"></script>
   <script src="js/league.js"></script>

@@ -120,14 +120,14 @@ const App = (() => {
       return `<div class="stat">
         <span class="st-name">${s.icon} ${s.name}</span>
         <div class="bar"><i style="--v:${animate ? 0 : k}" data-v="${k}"></i>${plus
-          ? `<i class="bn" style="--b0:${b0};--v:${animate ? 0 : k}" data-v="${k}" title="Прокачка +${plus}"></i>` : ''}</div>
-        <b class="st-val" data-v="${v}">${animate ? 0 : v}</b><small>/20${plus ? ` <em class="st-bonus" title="Прокачка">(+${plus})</em>` : ''}</small>
+          ? `<i class="bn" style="--b0:${b0};--v:${animate ? 0 : k}" data-v="${k}" title="${tr('Прокачка', 'Level-up bonus')} +${plus}"></i>` : ''}</div>
+        <b class="st-val" data-v="${v}">${animate ? 0 : v}</b><small>/20${plus ? ` <em class="st-bonus" title="${tr('Прокачка', 'Level-up bonus')}">(+${plus})</em>` : ''}</small>
       </div>`;
     }).join('')}</div>
     <div class="combat">
-      <span title="85 + выносливость × 10">❤ <b>${COMBAT.maxHp(h.stats)}</b> здоровья</span>
-      <span title="17 + сила × 2">⚔ <b>${COMBAT.damage(h.stats)}</b> урона</span>
-      <span title="6100 / (8,5 + ловкость)">⚡ атака за <b>${COMBAT.attackCost(h.stats)}</b> очков</span>
+      <span title="${tr('85 + выносливость × 10', '85 + Endurance × 10')}">❤ <b>${COMBAT.maxHp(h.stats)}</b> ${tr('здоровья', 'HP')}</span>
+      <span title="${tr('17 + сила × 2', '17 + Strength × 2')}">⚔ <b>${COMBAT.damage(h.stats)}</b> ${tr('урона', 'damage')}</span>
+      <span title="${tr('6100 / (8,5 + ловкость)', '6100 / (8.5 + Agility)')}">⚡ ${tr(`атака за <b>${COMBAT.attackCost(h.stats)}</b> очков`, `attack per <b>${COMBAT.attackCost(h.stats)}</b> points`)}</span>
     </div>`;
   }
 
@@ -150,12 +150,12 @@ const App = (() => {
   function passiveBadge(h) {
     const ps = PASSIVES[h.id];
     return `<div class="passive-badge"><span class="pb-icon">${ps.icon}</span>
-      <div><small>Пассивное умение</small><b>${ps.name}</b><p>${ps.desc}</p></div></div>`;
+      <div><small>${tr('Пассивное умение', 'Passive ability')}</small><b>${ps.name}</b><p>${ps.desc}</p></div></div>`;
   }
 
   function modelBadge(h) {
     return `<div class="model-badge"><span class="mb-icon">${h.modelIcon}</span>
-      <div><small>Модель поведения</small><b>${h.modelName}</b><p>${h.modelDesc}</p></div></div>`;
+      <div><small>${tr('Модель поведения', 'Behavior model')}</small><b>${h.modelName}</b><p>${h.modelDesc}</p></div></div>`;
   }
 
   function buildCarousel() {
@@ -280,26 +280,27 @@ const App = (() => {
 
     if (done) {
       const champ = hero(st[0].id);
-      $('tourInfo').innerHTML = `Сезон завершён · Чемпион: <b style="color:${champ.color}">👑 ${champ.name}</b>`;
+      $('tourInfo').innerHTML = `${tr('Сезон завершён · Чемпион', 'Season over · Champion')}: <b style="color:${champ.color}">👑 ${champ.name}</b>`;
     } else {
-      $('tourInfo').textContent = `Тур ${state.round + 1} из ${total} · ${state.round < half ? 'первый' : 'второй'} круг`;
+      $('tourInfo').textContent = tr(`Тур ${state.round + 1} из ${total} · ${state.round < half ? 'первый' : 'второй'} круг`,
+        `Round ${state.round + 1} of ${total} · ${state.round < half ? 'first' : 'second'} leg`);
     }
 
     if (state.playerId) {
       const me = hero(state.playerId);
       const place = st.findIndex((r) => r.id === me.id) + 1;
-      $('meChip').innerHTML = `${ava(me)}<div><small>Ваш герой</small>${link(me)}<span>${place}-е место</span></div>`;
+      $('meChip').innerHTML = `${ava(me)}<div><small>${tr('Ваш герой', 'Your hero')}</small>${link(me)}<span>${I18N.place(place)}</span></div>`;
       $('meChip').style.setProperty('--hc', me.color);
     } else {
-      $('meChip').innerHTML = '<div class="ava spect">👁</div><div><small>Режим</small><b>Зритель</b><span>ИИ против ИИ</span></div>';
+      $('meChip').innerHTML = `<div class="ava spect">👁</div><div><small>${tr('Режим', 'Mode')}</small><b>${tr('Зритель', 'Spectator')}</b><span>${tr('ИИ против ИИ', 'AI vs AI')}</span></div>`;
       $('meChip').style.setProperty('--hc', '#8b3dff');
     }
 
     const btn = $('playBtn');
     btn.disabled = done;
     const started = !done && state.schedule[state.round].some((m) => m.result);
-    btn.querySelector('span').textContent = done ? 'Сезон завершён'
-      : started ? `▶ Продолжить тур ${state.round + 1}` : `▶ Играть тур ${state.round + 1}`;
+    btn.querySelector('span').textContent = done ? tr('Сезон завершён', 'Season over')
+      : started ? tr(`▶ Продолжить тур ${state.round + 1}`, `▶ Continue round ${state.round + 1}`) : tr(`▶ Играть тур ${state.round + 1}`, `▶ Play round ${state.round + 1}`);
   }
 
   function syncTabs(instant) {
@@ -345,7 +346,7 @@ const App = (() => {
   /* ---------------------------------------------------------
    *  Турнирная таблица
    * ------------------------------------------------------- */
-  const FORM = { w: 'В', d: 'Н', l: 'П' };
+  const FORM = () => (I18N.lang === 'ru' ? { w: 'В', d: 'Н', l: 'П' } : { w: 'W', d: 'D', l: 'L' });
 
   function renderTable({ flip = false } = {}) {
     const pane = $('pane-table');
@@ -364,10 +365,11 @@ const App = (() => {
     pane.innerHTML = `
       <div class="table">
         <div class="t-row t-head">
-          <span>#</span><span class="t-who">Герой</span>
-          <span title="Игры">И</span><span title="Победы">В</span><span title="Ничьи">Н</span><span title="Поражения">П</span>
-          <span class="c-gd" title="Очки в матчах: набрано и пропущено">Камни ±</span>
-          <span title="Очки лиги">О</span><span class="c-form">Форма</span><span class="c-inj"></span>
+          <span>#</span><span class="t-who">${tr('Герой', 'Hero')}</span>
+          ${tr(`<span title="Игры">И</span><span title="Победы">В</span><span title="Ничьи">Н</span><span title="Поражения">П</span>`,
+            `<span title="Played">P</span><span title="Wins">W</span><span title="Draws">D</span><span title="Losses">L</span>`)}
+          <span class="c-gd" title="${tr('Очки в матчах: набрано и пропущено', 'Match points: scored and conceded')}">${tr('Камни ±', 'Gems ±')}</span>
+          <span title="${tr('Очки лиги', 'League points')}">${tr('О', 'Pts')}</span><span class="c-form">${tr('Форма', 'Form')}</span><span class="c-inj"></span>
         </div>
         ${st.map((r, i) => {
           const h = hero(r.id);
@@ -375,16 +377,17 @@ const App = (() => {
           return `
           <div class="t-row ${h.isPlayer ? 'me' : ''} ${zone}" data-id="${r.id}" data-pts="${r.pts}" style="--hc:${h.color};--i:${i}">
             <span class="pos">${i === 0 && anyPlayed ? '👑' : i + 1}</span>
-            <span class="t-who">${ava(h)}<span class="t-name">${link(h)}</span>${h.isPlayer ? '<em class="you-tag">ВЫ</em>' : ''}</span>
+            <span class="t-who">${ava(h)}<span class="t-name">${link(h)}</span>${h.isPlayer ? `<em class="you-tag">${tr('ВЫ', 'YOU')}</em>` : ''}</span>
             <span>${r.p}</span><span>${r.w}</span><span>${r.d}</span><span>${r.l}</span>
             <span class="c-gd">${r.gf}<i>:</i>${r.ga}</span>
             <span class="pts">${r.pts}</span>
-            <span class="c-form">${r.form.slice(-5).map((f) => `<i class="f-${f}">${FORM[f]}</i>`).join('') || '<i class="f-none">—</i>'}</span>
+            <span class="c-form">${r.form.slice(-5).map((f) => `<i class="f-${f}">${FORM()[f]}</i>`).join('') || '<i class="f-none">—</i>'}</span>
             <span class="c-inj">${injCross(h)}</span>
           </div>`;
         }).join('')}
       </div>
-      <p class="legend">3 очка за победу нокаутом, по 1 — за ничью (нокаута не было за 15 ходов). При равенстве очков выше тот, у кого больше разница камней.</p>`;
+      <p class="legend">${tr('3 очка за победу нокаутом, по 1 — за ничью (нокаута не было за 15 ходов). При равенстве очков выше тот, у кого больше разница камней.',
+        '3 points for a knockout win, 1 each for a draw (no knockout within 15 moves). On equal points, the higher gem difference ranks higher.')}</p>`;
 
     if (flip) {
       pane.querySelectorAll('.t-row[data-id]').forEach((row, i) => {
@@ -427,8 +430,8 @@ const App = (() => {
     const half = total / 2;
     $('pane-schedule').innerHTML = `
       <div class="rounds-strip" id="roundsStrip">
-        <span class="rs-label">Круг I</span>
-        ${state.schedule.map((_, r) => `${r === half ? '<span class="rs-label">Круг II</span>' : ''}
+        <span class="rs-label">${tr('Круг I', 'Leg I')}</span>
+        ${state.schedule.map((_, r) => `${r === half ? `<span class="rs-label">${tr('Круг II', 'Leg II')}</span>` : ''}
           <button class="rs-chip ${roundStatus(r)} ${r === selRound ? 'sel' : ''}" data-r="${r}">${r + 1}</button>`).join('')}
       </div>
       <div class="round-view" id="roundView">${roundView(selRound)}</div>`;
@@ -447,14 +450,14 @@ const App = (() => {
     return `
       <div class="fixture ${res ? 'done' : ''} ${H.isPlayer || A.isPlayer ? 'mine' : ''}" style="--h1:${H.color};--h2:${A.color}">
         <div class="fx-side home ${sideCls(hw)}">
-          ${ava(H)}<div class="fx-name">${link(H)}<small>дома${H.isPlayer ? ' · вы' : ''}</small></div>
+          ${ava(H)}<div class="fx-name">${link(H)}<small>${tr('дома', 'home')}${H.isPlayer ? tr(' · вы', ' · you') : ''}</small></div>
         </div>
         <div class="fx-mid">
-          ${res ? `<div class="fx-score"><b>${res.home}</b><i>:</i><b>${res.away}</b></div><small>${draw ? 'ничья' : res.crush ? 'сокрушительная' : res.ko ? 'нокаут' : 'завершён'}</small>`
-                : '<div class="fx-vs">VS</div><small>предстоит</small>'}
+          ${res ? `<div class="fx-score"><b>${res.home}</b><i>:</i><b>${res.away}</b></div><small>${draw ? tr('ничья', 'draw') : res.crush ? tr('сокрушительная', 'crushing') : res.ko ? tr('нокаут', 'knockout') : tr('завершён', 'finished')}</small>`
+                : `<div class="fx-vs">VS</div><small>${tr('предстоит', 'upcoming')}</small>`}
         </div>
         <div class="fx-side away ${sideCls(aw)}">
-          <div class="fx-name">${link(A)}<small>в гостях${A.isPlayer ? ' · вы' : ''}</small></div>${ava(A)}
+          <div class="fx-name">${link(A)}<small>${tr('в гостях', 'away')}${A.isPlayer ? tr(' · вы', ' · you') : ''}</small></div>${ava(A)}
         </div>
       </div>`;
   }
@@ -462,11 +465,11 @@ const App = (() => {
   function roundView(r) {
     const half = state.schedule.length / 2;
     const status = roundStatus(r);
-    const label = { played: 'сыгран', current: 'текущий тур', future: 'предстоит' }[status];
+    const label = { played: tr('сыгран', 'played'), current: tr('текущий тур', 'current round'), future: tr('предстоит', 'upcoming') }[status];
     return `
       <div class="rv-head">
-        <h3>Тур ${r + 1}</h3>
-        <span class="rv-circle">${r < half ? 'Первый круг' : 'Второй круг'}</span>
+        <h3>${tr('Тур', 'Round')} ${r + 1}</h3>
+        <span class="rv-circle">${r < half ? tr('Первый круг', 'First leg') : tr('Второй круг', 'Second leg')}</span>
         <span class="rv-status ${status}">${label}</span>
       </div>
       <div class="fixtures stagger">${state.schedule[r].map((m, i) => fixture(m).replace('class="fixture', `style="--i:${i}" class="fixture`)).join('')}</div>`;
@@ -512,11 +515,11 @@ const App = (() => {
           <div class="hp-halo"></div>
           <div class="hp-rays"></div>
           <img class="hp-sprite" src="${h.sprite}" alt="${h.name}" />
-          <div class="hp-rank"><small>место</small>${place}</div>
+          <div class="hp-rank"><small>${tr('место', 'place')}</small>${place}</div>
         </div>
         <div class="hp-info">
           <div class="kicker hc">${h.title}</div>
-          <h1 class="glitch" data-text="${h.name}">${h.name}${h.isPlayer ? ' <em class="you-tag">ВЫ</em>' : ''}${injCross(h, 'big')}</h1>
+          <h1 class="glitch" data-text="${h.name}">${h.name}${h.isPlayer ? ` <em class="you-tag">${tr('ВЫ', 'YOU')}</em>` : ''}${injCross(h, 'big')}</h1>
           ${xpBlock(h)}
           ${statBars(h, true)}
           ${passiveBadge(h)}
@@ -525,40 +528,40 @@ const App = (() => {
       </div>
 
       <div class="record">
-        <div class="rec"><b>${row.p}</b><small>Матчей</small></div>
-        <div class="rec w"><b>${row.w}</b><small>Побед</small></div>
-        <div class="rec d"><b>${row.d}</b><small>Ничьих</small></div>
-        <div class="rec l"><b>${row.l}</b><small>Поражений</small></div>
-        <div class="rec pts"><b>${row.pts}</b><small>Очков лиги</small></div>
+        <div class="rec"><b>${row.p}</b><small>${tr('Матчей', 'Matches')}</small></div>
+        <div class="rec w"><b>${row.w}</b><small>${tr('Побед', 'Wins')}</small></div>
+        <div class="rec d"><b>${row.d}</b><small>${tr('Ничьих', 'Draws')}</small></div>
+        <div class="rec l"><b>${row.l}</b><small>${tr('Поражений', 'Losses')}</small></div>
+        <div class="rec pts"><b>${row.pts}</b><small>${tr('Очков лиги', 'League points')}</small></div>
       </div>
       <div class="wdl">
         <i class="w" style="flex:${row.w || 0.0001}">${row.w ? pct(row.w) + '%' : ''}</i>
         <i class="d" style="flex:${row.d || 0.0001}">${row.d ? pct(row.d) + '%' : ''}</i>
         <i class="l" style="flex:${row.l || 0.0001}">${row.l ? pct(row.l) + '%' : ''}</i>
-        ${row.p ? '' : '<span>Ещё не сыграно ни одного матча</span>'}
+        ${row.p ? '' : `<span>${tr('Ещё не сыграно ни одного матча', 'No matches played yet')}</span>`}
       </div>
       <div class="hp-extra">
-        <span>Набрано камней: <b>${row.gf}</b></span>
-        <span>Пропущено: <b>${row.ga}</b></span>
-        <span>Лучший матч: <b>${best}</b></span>
+        <span>${tr('Набрано камней', 'Gems scored')}: <b>${row.gf}</b></span>
+        <span>${tr('Пропущено', 'Conceded')}: <b>${row.ga}</b></span>
+        <span>${tr('Лучший матч', 'Best match')}: <b>${best}</b></span>
       </div>
 
-      <h3 class="hp-sub">Матчи сезона</h3>
+      <h3 class="hp-sub">${tr('Матчи сезона', 'Season matches')}</h3>
       <div class="hp-matches stagger">
         ${list.map(({ round, match, home }, i) => {
           const opp = hero(home ? match.away : match.home);
           const res = match.result;
-          let badge = '<span class="res-badge f-none">—</span>', score = '<span class="soon">предстоит</span>';
+          let badge = '<span class="res-badge f-none">—</span>', score = `<span class="soon">${tr('предстоит', 'upcoming')}</span>`;
           if (res) {
             const my = home ? res.home : res.away, their = home ? res.away : res.home;
             const o = League.outcome(res);
             const k = o === 'draw' ? 'd' : (o === 'home') === home ? 'w' : 'l';
-            badge = `<span class="res-badge f-${k}">${FORM[k]}</span>`;
+            badge = `<span class="res-badge f-${k}">${FORM()[k]}</span>`;
             score = `<b>${my} : ${their}</b>`;
           }
           return `<div class="hm-row ${res ? '' : 'future'}" style="--i:${i};--oc:${opp.color}">
-            <span class="hm-round">Тур ${round + 1}</span>
-            <span class="hm-where">${home ? '🏠 дома' : '✈️ в гостях'}</span>
+            <span class="hm-round">${tr('Тур', 'Round')} ${round + 1}</span>
+            <span class="hm-where">${home ? tr('🏠 дома', '🏠 home') : tr('✈️ в гостях', '✈️ away')}</span>
             <span class="hm-opp">${ava(opp)}${link(opp)}</span>
             <span class="hm-score">${score}</span>${badge}
           </div>`;
@@ -582,11 +585,11 @@ const App = (() => {
     }).join('');
     return `<div class="xp">
       <div class="xp-top">
-        <span class="xp-lvl">Уровень <b>${h.level}</b></span>
-        <span class="xp-num"><b>${h.xp}</b> / ${need} опыта</span>
+        <span class="xp-lvl">${tr('Уровень', 'Level')} <b>${h.level}</b></span>
+        <span class="xp-num"><b>${h.xp}</b> / ${need} ${tr('опыта', 'XP')}</span>
       </div>
       <div class="xp-bar"><i style="--x:0" data-x="${h.xp / need}"></i></div>
-      ${pickList ? `<div class="xp-picks"><small>Улучшения:</small>${pickList}</div>` : ''}
+      ${pickList ? `<div class="xp-picks"><small>${tr('Улучшения', 'Upgrades')}:</small>${pickList}</div>` : ''}
     </div>`;
   }
 
@@ -612,12 +615,12 @@ const App = (() => {
   function fillVsSide(el, h, where) {
     el.style.setProperty('--hc', h.color);
     el.innerHTML = `<img src="${h.sprite}" alt="" />
-      <div class="vs-name"><small>${where}${h.isPlayer ? ' · ваш герой' : ''}</small><b>${h.name}</b></div>`;
+      <div class="vs-name"><small>${where}${h.isPlayer ? tr(' · ваш герой', ' · your hero') : ''}</small><b>${h.name}</b></div>`;
   }
 
   async function vsIn(H, A, info) {
-    fillVsSide($('vsLeft'), H, 'Дома');
-    fillVsSide($('vsRight'), A, 'В гостях');
+    fillVsSide($('vsLeft'), H, tr('Дома', 'Home'));
+    fillVsSide($('vsRight'), A, tr('В гостях', 'Away'));
     $('vsInfo').textContent = info;
     const vs = $('vs');
     vs.className = 'vs';
@@ -635,7 +638,7 @@ const App = (() => {
 
   // Строки начисления опыта в окне результата
   function xpRows(xp) {
-    const fmt = (v) => String(Math.round(v * 100) / 100).replace('.', ',');
+    const fmt = (v) => tr(String(Math.round(v * 100) / 100).replace('.', ','), String(Math.round(v * 100) / 100));
     const pct = (v) => (v > 0 ? '+' : '−') + Math.abs(Math.round(v * 100)) + '%';
     const mulTag = (mul) => {
       if (!mul || Math.abs(mul.mult - 1) < 1e-9) return '';
@@ -644,28 +647,28 @@ const App = (() => {
     // Расшифровка множителя мелким шрифтом: база, бонусы и штрафы, итог
     const why = (mul, base) => {
       if (!mul) return '';
-      if (mul.concussed) return '<div class="xg-why"><span class="down">💫 Сотрясение мозга — опыт не начисляется</span></div>';
+      if (mul.concussed) return `<div class="xg-why"><span class="down">${tr('💫 Сотрясение мозга — опыт не начисляется', '💫 Concussion: no XP for this bout')}</span></div>`;
       if (!base) return '';
       const sign = (v) => `<span class="${v > 0 ? 'up' : 'down'}">${pct(v)}</span>`;
-      const parts = [`база ${base}`];
-      if (mul.place) parts.push(`место соперника ${sign(mul.place)}`);
-      if (mul.level) parts.push(`уровень соперника ${sign(mul.level)}`);
-      if (mul.dealt) parts.push(`<span class="hurt">✚ травмы ×${mul.dealt}</span> ${sign(mul.injury)}`);
-      if (mul.floored) parts.push(`<span class="down">минимум ×${fmt(XP_MIN_MULT)}</span>`);
-      parts.push(`итого ×${fmt(mul.mult)}`);
+      const parts = [`${tr('база', 'base')} ${base}`];
+      if (mul.place) parts.push(`${tr('место соперника', 'opponent place')} ${sign(mul.place)}`);
+      if (mul.level) parts.push(`${tr('уровень соперника', 'opponent level')} ${sign(mul.level)}`);
+      if (mul.dealt) parts.push(`<span class="hurt">✚ ${tr('травмы', 'injuries')} ×${mul.dealt}</span> ${sign(mul.injury)}`);
+      if (mul.floored) parts.push(`<span class="down">${tr('минимум', 'minimum')} ×${fmt(XP_MIN_MULT)}</span>`);
+      parts.push(`${tr('итого', 'total')} ×${fmt(mul.mult)}`);
       return `<div class="xg-why">${parts.join(' · ')}</div>`;
     };
     return `<div class="xp-gain">${xp.map(({ h, g, mul, base }) => `
       <div class="xg-row ${g.amount ? '' : 'zero'}" style="--hc:${h.color}">
         ${ava(h)}
         <div class="xg-main">
-          <div class="xg-top"><b>${h.name}</b><span class="xg-lvl">Ур. <em>${g.before.level}</em></span>
-            <span class="xg-amt">+${g.amount} опыта${g.amount ? mulTag(mul) : ''}</span></div>
+          <div class="xg-top"><b>${h.name}</b><span class="xg-lvl">${tr('Ур.', 'Lv.')} <em>${g.before.level}</em></span>
+            <span class="xg-amt">+${g.amount} ${tr('опыта', 'XP')}${g.amount ? mulTag(mul) : ''}</span></div>
           ${why(mul, base)}
           <div class="xg-bar"><i style="width:${(g.before.xp / xpToNext(g.before.level)) * 100}%"></i></div>
           <div class="xg-num">${g.before.xp} / ${xpToNext(g.before.level)}</div>
         </div>
-        <div class="xg-up">НОВЫЙ УРОВЕНЬ!</div>
+        <div class="xg-up">${tr('НОВЫЙ УРОВЕНЬ!', 'LEVEL UP!')}</div>
       </div>`).join('')}</div>`;
   }
 
@@ -708,7 +711,7 @@ const App = (() => {
       const e = roster[h.id].injuries.find((x) => x.id === id);
       items.push(`<span style="--hc:${h.color}"><b>${h.name}</b>: ${inj.icon} ${inj.name}${e ? ` — ${e.left} ${boutsWord(e.left)}` : ''}</span>`);
     }));
-    return items.length ? `<div class="res-inj"><i>✚</i> Травмы: ${items.join('')}</div>` : '';
+    return items.length ? `<div class="res-inj"><i>✚</i> ${tr('Травмы', 'Injuries')}: ${items.join('')}</div>` : '';
   }
 
   function showResult(H, A, res, last, xp = []) {
@@ -718,20 +721,20 @@ const App = (() => {
       const card = $('resultCard');
       card.style.setProperty('--hc', w ? w.color : '#ffd21f');
       card.innerHTML = `
-        ${res.crush ? '<div class="crush-stamp">Сокрушительная победа</div>' : ''}
+        ${res.crush ? `<div class="crush-stamp">${tr('Сокрушительная победа', 'Crushing victory')}</div>` : ''}
         <div class="res-sprites">${w ? `<img src="${w.sprite}" alt="" />` : `<img src="${H.sprite}" alt="" /><img src="${A.sprite}" alt="" />`}</div>
-        <div class="kicker hc">${w ? (res.crush ? 'Сокрушительная победа нокаутом' : 'Победа нокаутом') : 'Ничья — нокаута не было'}</div>
-        <h2>${w ? w.name : 'Оба устояли!'}</h2>
+        <div class="kicker hc">${w ? (res.crush ? tr('Сокрушительная победа нокаутом', 'Crushing knockout victory') : tr('Победа нокаутом', 'Knockout victory')) : tr('Ничья — нокаута не было', 'Draw: no knockout')}</div>
+        <h2>${w ? w.name : tr('Оба устояли!', 'Both still standing!')}</h2>
         <div class="res-score">
           <span style="color:${H.color}">${H.name}</span>
           <b>❤ ${res.hp[0]} : ${res.hp[1]} ❤</b>
           <span style="color:${A.color}">${A.name}</span>
         </div>
-        <p class="res-sub">Очки за камни: ${res.home} : ${res.away}</p>
+        <p class="res-sub">${tr('Очки за камни', 'Gem points')}: ${res.home} : ${res.away}</p>
         ${injuryLine(H, A, res)}
         ${xp.length ? xpRows(xp) : ''}
         <p class="countdown" id="resCount"></p>
-        <button class="cta" id="resNext"><span>${last ? 'К турнирной таблице' : 'Следующий матч'}</span></button>`;
+        <button class="cta" id="resNext"><span>${last ? tr('К турнирной таблице', 'To the standings') : tr('Следующий матч', 'Next match')}</span></button>`;
       $('resultOverlay').classList.add('show');
       Sound.play(w ? 'win' : 'draw');
       if (xp.length) animateXp(xp);
@@ -746,7 +749,8 @@ const App = (() => {
       const tick = () => {
         if (Engine.isPaused()) return;
         if (left <= 0) { done(); return; }
-        $('resCount').textContent = `${last ? 'Возврат к таблице' : 'Следующий матч'} через ${left}…`;
+        $('resCount').textContent = last ? tr(`Возврат к таблице через ${left}…`, `Back to the standings in ${left}…`)
+          : tr(`Следующий матч через ${left}…`, `Next match in ${left}…`);
         left--;
       };
       tick();
@@ -771,7 +775,7 @@ const App = (() => {
       const m = round[k];
       if (m.result) continue;
       const H = hero(m.home), A = hero(m.away);
-      const info = `Тур ${r + 1} · Матч ${k + 1} из ${round.length}`;
+      const info = tr(`Тур ${r + 1} · Матч ${k + 1} из ${round.length}`, `Round ${r + 1} · Match ${k + 1} of ${round.length}`);
       await vsIn(H, A, info);
       $('skipBtn').hidden = H.isPlayer || A.isPlayer; // свой матч игрок играет сам
       const playing = Engine.play({ home: H, away: A, info });
@@ -841,12 +845,12 @@ const App = (() => {
           <div class="lu-head">
             <img src="${h.sprite}" alt="" />
             <div>
-              <div class="kicker hc">Новый уровень!</div>
+              <div class="kicker hc">${tr('Новый уровень!', 'Level up!')}</div>
               <h2>${h.name}</h2>
-              <div class="lu-level">Уровень <b>${h.level - h.pending + 1}</b></div>
+              <div class="lu-level">${tr('Уровень', 'Level')} <b>${h.level - h.pending + 1}</b></div>
             </div>
           </div>
-          <p class="lu-hint">${human ? 'Выберите улучшение' : 'ИИ выбирает улучшение…'}</p>
+          <p class="lu-hint">${human ? tr('Выберите улучшение', 'Choose an upgrade') : tr('ИИ выбирает улучшение…', 'AI is choosing an upgrade…')}</p>
           <div class="lu-cards">${cards.map((c, i) => {
             const cur = c.stat ? h.stats[c.stat] : null;
             return `<button class="up-card" data-i="${i}" style="--i:${i}" ${human ? '' : 'disabled'}>
@@ -867,7 +871,7 @@ const App = (() => {
         League.save(state);
         Sound.play('select');
         el.querySelectorAll('.up-card').forEach((b, j) => b.classList.add(j === i ? 'chosen' : 'faded'));
-        el.querySelector('.lu-hint').textContent = `${human ? 'Выбрано' : 'ИИ выбрал'}: ${up.icon} ${up.name} — ${up.desc}`;
+        el.querySelector('.lu-hint').textContent = `${human ? tr('Выбрано', 'Chosen') : tr('ИИ выбрал', 'AI chose')}: ${up.icon} ${up.name} — ${up.desc}`;
         setTimeout(() => {
           el.classList.add('out');
           setTimeout(() => { el.remove(); resolve(); }, 450);
@@ -910,14 +914,14 @@ const App = (() => {
       <div class="champ-card">
         <div class="crown">👑</div>
         <img src="${champ.sprite}" alt="" />
-        <div class="kicker hc">Чемпион Лиги Шести Камней</div>
+        <div class="kicker hc">${tr('Чемпион Лиги Шести Камней', 'Six Stones League Champion')}</div>
         <h2>${champ.name}</h2>
-        <p>${st[0].pts} очков · ${st[0].w} побед · ${st[0].d} ничьих · ${st[0].l} поражений</p>
-        <p class="my">${!state.playerId ? 'Вы наблюдали за турниром как зритель.'
-          : champ.isPlayer ? 'Это ваш герой! Поздравляем! 🎉' : `Ваш герой занял ${myPlace}-е место.`}</p>
+        <p>${tr(`${st[0].pts} очков · ${st[0].w} побед · ${st[0].d} ничьих · ${st[0].l} поражений`, `${st[0].pts} points · ${st[0].w} wins · ${st[0].d} draws · ${st[0].l} losses`)}</p>
+        <p class="my">${!state.playerId ? tr('Вы наблюдали за турниром как зритель.', 'You watched the tournament as a spectator.')
+          : champ.isPlayer ? tr('Это ваш герой! Поздравляем! 🎉', 'That’s your hero! Congratulations! 🎉') : tr(`Ваш герой занял ${myPlace}-е место.`, `Your hero finished in ${I18N.place(myPlace)}.`)}</p>
         <div class="champ-actions">
-          <button class="ghost" data-act="close">К таблице</button>
-          <button class="cta" data-act="new"><span>Новый турнир</span></button>
+          <button class="ghost" data-act="close">${tr('К таблице', 'To the standings')}</button>
+          <button class="cta" data-act="new"><span>${tr('Новый турнир', 'New tournament')}</span></button>
         </div>
       </div>`;
     $('fx').append(el);
@@ -932,7 +936,7 @@ const App = (() => {
 
   function newTournament(skipConfirm) {
     if (busy) return;
-    if (!skipConfirm && !confirm('Начать новый турнир? Текущие результаты будут потеряны.')) return;
+    if (!skipConfirm && !confirm(tr('Начать новый турнир? Текущие результаты будут потеряны.', 'Start a new tournament? Current results will be lost.'))) return;
     League.clear();
     state = null;
     roster = League.createRoster();
@@ -949,7 +953,7 @@ const App = (() => {
    * ------------------------------------------------------- */
   function setPaused(v) {
     Engine.setPaused(v);
-    $('pauseBtn').textContent = v ? '▶ Продолжить' : '⏸ Пауза';
+    $('pauseBtn').textContent = v ? tr('▶ Продолжить', '▶ Resume') : tr('⏸ Пауза', '⏸ Pause');
   }
 
   function setSpeed(v) {
@@ -961,9 +965,61 @@ const App = (() => {
   /* ---------------------------------------------------------
    *  Инициализация
    * ------------------------------------------------------- */
+  /* ---------------------------------------------------------
+   *  Стартовое меню: язык и «Старт»
+   * ------------------------------------------------------- */
+  function initMenu() {
+    let lang = I18N.lang;
+    $('menuHeroes').innerHTML = HEROES.map((h, i) =>
+      `<img src="${h.sprite}" alt="" style="--hc:${h.color};--i:${i}" draggable="false" />`).join('');
+    const sync = () => {
+      document.querySelectorAll('#langSwitch button').forEach((b) => b.classList.toggle('active', b.dataset.lang === lang));
+      const b = document.querySelector(`#langSwitch button[data-lang="${lang}"]`);
+      const ink = document.querySelector('#langSwitch .lang-ink');
+      ink.style.left = b.offsetLeft + 'px';
+      ink.style.width = b.offsetWidth + 'px';
+    };
+    $('langSwitch').addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b || b.dataset.lang === lang) return;
+      lang = b.dataset.lang;
+      Sound.play('tick');
+      I18N.set(lang); // меню сразу переключается на выбранный язык
+      sync();
+    });
+    $('startBtn').addEventListener('click', (e) => {
+      if (transitioning) return;
+      I18N.set(lang);
+      Sound.play('select');
+      const r = e.currentTarget.getBoundingClientRect();
+      guarded(() => portal(r.left + r.width / 2, r.top + r.height / 2, '#ff3d8b', enterGame));
+    });
+    requestAnimationFrame(sync);
+  }
+
+  // Первый экран после меню: лига (если турнир уже идёт) или выбор героя
+  function enterGame() {
+    buildCarousel();
+    if (state) {
+      selRound = Math.min(state.round, state.schedule.length - 1);
+      renderLeague();
+      syncTabs(true);
+      show('league');
+      stagger($('pane-table'));
+      // страницу закрыли во время выбора улучшения — предлагаем выбрать снова
+      if (HEROES.some((h) => roster[h.id].pending > 0)) {
+        setTimeout(() => { busy = true; resolveLevelUps(HEROES.map((h) => h.id)).then(() => { busy = false; }); }, 900);
+      }
+    } else {
+      show('select');
+      layoutCarousel();
+    }
+  }
+
   function init() {
     Engine.init();
-    buildCarousel();
+    I18N.applyDom();
+    initMenu();
 
     $('chooseBtn').addEventListener('click', (e) => choose(e));
     $('spectateBtn').addEventListener('click', (e) => choose(e, true));
@@ -977,7 +1033,7 @@ const App = (() => {
 
     document.addEventListener('click', (e) => {
       const b = e.target.closest('button');
-      if (b && !b.matches('#chooseBtn, #spectateBtn, #tabs button, .rs-chip, .nav, #dots button, #playBtn, .audio-ctl button')) Sound.play('click');
+      if (b && !b.matches('#chooseBtn, #spectateBtn, #tabs button, .rs-chip, .nav, #dots button, #playBtn, .audio-ctl button, #startBtn, #langSwitch button')) Sound.play('click');
     });
     const syncAudioBtns = () => {
       $('musicBtn').classList.toggle('off', !Sound.musicOn());
@@ -1004,7 +1060,9 @@ const App = (() => {
     });
 
     document.addEventListener('keydown', (e) => {
-      if (screen === 'select') {
+      if (screen === 'menu') {
+        if (e.key === 'Enter') $('startBtn').click();
+      } else if (screen === 'select') {
         if (e.key === 'ArrowLeft') step(-1);
         if (e.key === 'ArrowRight') step(1);
         if (e.key === 'Enter') $('chooseBtn').click();
@@ -1021,19 +1079,7 @@ const App = (() => {
       if (screen === 'league') syncTabs(true);
     });
 
-    if (state) {
-      selRound = Math.min(state.round, state.schedule.length - 1);
-      renderLeague();
-      syncTabs(true);
-      show('league');
-      stagger($('pane-table'));
-      // страницу закрыли во время выбора улучшения — предлагаем выбрать снова
-      if (HEROES.some((h) => roster[h.id].pending > 0)) {
-        setTimeout(() => { busy = true; resolveLevelUps(HEROES.map((h) => h.id)).then(() => { busy = false; }); }, 900);
-      }
-    } else {
-      show('select');
-    }
+    show('menu');
   }
 
   init();

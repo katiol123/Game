@@ -198,6 +198,43 @@ button:disabled { opacity: 0.45; cursor: default; transform: none; }
 /* =========================================================
  *  ЭКРАН ВЫБОРА
  * ========================================================= */
+/* ---------- стартовое меню ---------- */
+#scr-menu { display: none; flex-direction: column; align-items: center; justify-content: center; }
+#scr-menu.active { display: flex; }
+.menu-glow { position: fixed; left: 50%; top: 45%; width: 70vmax; height: 70vmax; transform: translate(-50%, -50%); z-index: -1;
+  border-radius: 50%; filter: blur(130px); opacity: 0.3; pointer-events: none;
+  background: conic-gradient(#f0304a, #ff8c1a, #ffd21f, #22c55e, #2f86ff, #a347ff, #f0304a); animation: menuSpin 18s linear infinite; }
+@keyframes menuSpin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+.menu-heroes { position: fixed; left: 0; right: 0; bottom: 0; height: 46vh; display: flex; justify-content: center; align-items: flex-end;
+  pointer-events: none; z-index: -1; -webkit-mask-image: linear-gradient(to top, transparent, #000 45%); mask-image: linear-gradient(to top, transparent, #000 45%); }
+.menu-heroes img { height: 100%; margin: 0 -3.2vw; opacity: 0.32; filter: drop-shadow(0 0 22px var(--hc)) saturate(0.8);
+  animation: menuHero 0.9s cubic-bezier(.2, .9, .3, 1.15) calc(var(--i) * 70ms) backwards, bob 3.2s ease-in-out calc(var(--i) * -0.4s) infinite; }
+.menu-heroes img:nth-child(even) { height: 88%; }
+@keyframes menuHero { from { opacity: 0; transform: translateY(60px); } }
+.menu-box { display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center; padding: 34px 40px 38px;
+  border-radius: 28px; background: rgba(13, 11, 36, 0.55); border: 1px solid var(--border); backdrop-filter: blur(10px);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5); animation: menuIn 0.8s cubic-bezier(.2, .9, .3, 1.1) both; max-width: 100%; }
+@keyframes menuIn { from { opacity: 0; transform: translateY(24px) scale(0.96); } }
+.menu-gems { display: flex; gap: 10px; }
+.menu-gems i { width: 18px; height: 18px; border-radius: 5px; transform: rotate(45deg); animation: menuGem 1.8s ease-in-out infinite;
+  box-shadow: 0 0 14px currentColor; background: currentColor; }
+.menu-gems i:nth-child(1) { color: #f0304a; } .menu-gems i:nth-child(2) { color: #ff8c1a; animation-delay: 0.12s; }
+.menu-gems i:nth-child(3) { color: #ffd21f; animation-delay: 0.24s; } .menu-gems i:nth-child(4) { color: #22c55e; animation-delay: 0.36s; }
+.menu-gems i:nth-child(5) { color: #2f86ff; animation-delay: 0.48s; } .menu-gems i:nth-child(6) { color: #a347ff; animation-delay: 0.6s; }
+@keyframes menuGem { 0%, 100% { transform: rotate(45deg) translateY(0); } 50% { transform: rotate(45deg) translate(-5px, -5px); } }
+.menu-title { font-size: clamp(34px, 7vw, 72px); line-height: 1.05;
+  background: linear-gradient(90deg, #ff5fa2, #ffd21f, #4fd1ff); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 6px 24px rgba(255, 95, 162, 0.35)); }
+.menu-lang { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.menu-lang small { font-size: 12px; text-transform: uppercase; letter-spacing: 3px; color: var(--muted); font-weight: 700; }
+.lang-switch { position: relative; display: flex; gap: 4px; padding: 4px; border-radius: 16px; background: var(--card); border: 1px solid var(--border); }
+.lang-switch button { position: relative; z-index: 1; background: transparent; border: 0; padding: 10px 20px; border-radius: 12px; color: var(--muted); }
+.lang-switch button.active { color: #fff; }
+.lang-ink { position: absolute; top: 4px; bottom: 4px; left: 4px; border-radius: 12px;
+  background: linear-gradient(135deg, #ff5fa2, #6a2bff); box-shadow: 0 6px 20px rgba(255, 95, 162, 0.4);
+  transition: left 0.35s cubic-bezier(.3, 1.4, .5, 1), width 0.35s; }
+.menu-start { font-size: 22px; padding: 16px 56px; margin-top: 4px; }
+
 #scr-select { display: none; flex-direction: column; align-items: center; }
 #scr-select.active { display: flex; }
 .sel-glow { position: fixed; width: 60vmax; height: 60vmax; left: 30%; top: 45%; transform: translate(-50%, -50%);

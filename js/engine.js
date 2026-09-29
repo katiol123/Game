@@ -764,7 +764,7 @@ const Engine = (() => {
       el.style.setProperty('--pc', h.color);
       el.querySelector('.m-sprite').src = h.sprite;
       el.querySelector('.name').textContent = h.name;
-      el.querySelector('.side').textContent = i === 0 ? 'Дома' : 'В гостях';
+      el.querySelector('.side').textContent = i === 0 ? tr('Дома', 'Home') : tr('В гостях', 'Away');
       el.querySelector('.you').hidden = !h.isPlayer;
       el.querySelector('.score').textContent = '0';
       el.querySelector('.dmg').textContent = p.dmg;
@@ -824,11 +824,11 @@ const Engine = (() => {
   function renderStatus(p) {
     const ps = PASSIVES[p.id];
     const chips = [p.noPassive
-      ? `<span class="st-chip passive off" title="Отключена переломом ребра">${ps.icon} <s>${ps.name}</s></span>`
+      ? `<span class="st-chip passive off" title="${tr('Отключена переломом ребра', 'Disabled by a broken rib')}">${ps.icon} <s>${ps.name}</s></span>`
       : `<span class="st-chip passive" title="${ps.desc}">${ps.icon} ${ps.name}</span>`];
-    if (p.bleed) chips.push('<span class="st-chip bad" title="Кровотечение: в начале каждого хода (красных камней − 10) × 4 урона">🩸 Истекает кровью</span>');
-    if (p.aim) chips.push(`<span class="st-chip good" title="Прицеливание: ${p.aim * 7}% шанс крита ×2">🎯 ×${p.aim}</span>`);
-    if (p.snack) chips.push(`<span class="st-chip good" title="Перекус: ${p.snack * 3}% шанс крита ×1,75">🌯 ×${p.snack}</span>`);
+    if (p.bleed) chips.push(`<span class="st-chip bad" title="${tr('Кровотечение: в начале каждого хода (красных камней − 10) × 4 урона', 'Bleeding: (red gems − 10) × 4 damage at the start of each turn')}">🩸 ${tr('Истекает кровью', 'Bleeding')}</span>`);
+    if (p.aim) chips.push(`<span class="st-chip good" title="${tr(`Прицеливание: ${p.aim * 7}% шанс крита ×2`, `Aiming: ${p.aim * 7}% chance of a ×2 crit`)}">🎯 ×${p.aim}</span>`);
+    if (p.snack) chips.push(`<span class="st-chip good" title="${tr(`Перекус: ${p.snack * 3}% шанс крита ×1,75`, `Snack Time: ${p.snack * 3}% chance of a ×1.75 crit`)}">🌯 ×${p.snack}</span>`);
     p.el.querySelector('.status').innerHTML = chips.join('');
   }
 
@@ -844,7 +844,7 @@ const Engine = (() => {
   function carryTag(p, bar, amount) {
     const tag = document.createElement('b');
     tag.className = 'carry-tag';
-    tag.textContent = `+${amount} в запасе`;
+    tag.textContent = tr(`+${amount} в запасе`, `+${amount} carried over`);
     tag.addEventListener('animationend', () => tag.remove(), { once: true });
     const line = chargeEl(p, bar).querySelector('small');
     line.querySelectorAll('.carry-tag').forEach((t) => t.remove());
@@ -876,7 +876,7 @@ const Engine = (() => {
   function showKO(def, att) {
     def.el.classList.add('ko');
     Sound.play('ko');
-    banner('НОКАУТ!', att ? att.hero.color : '#ff3b4e');
+    banner(tr('НОКАУТ!', 'KNOCKOUT!'), att ? att.hero.color : '#ff3b4e');
   }
 
   // Удар att по def: сначала считается исход (правила в combat.js), потом летит снаряд и показывается результат.
@@ -902,25 +902,26 @@ const Engine = (() => {
     orb.remove();
     if (id !== gameId) return false;
 
-    const tag = kind === 'ram' ? ' (таран)' : kind === 'duel' ? ' (дуэль)' : kind === 'charge2' ? ' (2-й ствол)' : '';
+    const tag = kind === 'ram' ? tr(' (таран)', ' (ram)') : kind === 'duel' ? tr(' (дуэль)', ' (duel)') : kind === 'charge2' ? tr(' (2-й ствол)', ' (2nd barrel)') : '';
     if (ev.missed) {
-      cardPop(def, '🦾 Промах!', 'info');
+      cardPop(def, tr('🦾 Промах!', '🦾 Miss!'), 'info');
       Sound.play('dodge');
-      log(`🦾 <b>${att.hero.name}</b> промахивается${tag} — перелом руки`, att.hero.color);
+      log(tr(`🦾 <b>${att.hero.name}</b> промахивается${tag} — перелом руки`, `🦾 <b>${att.hero.name}</b> misses${tag}: broken arm`), att.hero.color);
     } else if (ev.dodged) {
-      cardPop(def, 'Даже не моргнул!', 'info');
+      cardPop(def, tr('Даже не моргнул!', 'Didn’t even blink!'), 'info');
       Sound.play('dodge');
-      log(`😐 <b>${def.hero.name}</b> даже не моргнул — удар${tag} ${att.hero.name} проигнорирован`, def.hero.color);
+      log(tr(`😐 <b>${def.hero.name}</b> даже не моргнул — удар${tag} ${att.hero.name} проигнорирован`, `😐 <b>${def.hero.name}</b> didn’t even blink: ${att.hero.name}’s strike${tag} ignored`), def.hero.color);
     } else {
       restartClass(def.el, 'hit');
-      cardPop(def, (ev.crit ? 'КРИТ! ' : '') + '−' + ev.dmg, ev.crit ? 'dmg crit' : 'dmg');
+      cardPop(def, (ev.crit ? tr('КРИТ! ', 'CRIT! ') : '') + '−' + ev.dmg, ev.crit ? 'dmg crit' : 'dmg');
       renderHp(def);
       if (ev.ko) showKO(def, att); else Sound.play(ev.crit ? 'crit' : 'hit');
-      log(`⚔ <b>${att.hero.name}</b> бьёт${tag} на ${ev.dmg}${ev.crit ? ' — КРИТ!' : ''} — у соперника ❤ ${def.hp}`, att.hero.color);
+      log(tr(`⚔ <b>${att.hero.name}</b> бьёт${tag} на ${ev.dmg}${ev.crit ? ' — КРИТ!' : ''} — у соперника ❤ ${def.hp}`,
+        `⚔ <b>${att.hero.name}</b> hits${tag} for ${ev.dmg}${ev.crit ? ' (CRIT!)' : ''}; opponent ❤ ${def.hp}`), att.hero.color);
     }
     if (ev.bleedApplied) {
-      cardPop(def, '🩸 Кровотечение!', 'bad', 250);
-      log(`🩸 <b>${def.hero.name}</b> истекает кровью до конца боя`, att.hero.color);
+      cardPop(def, tr('🩸 Кровотечение!', '🩸 Bleeding!'), 'bad', 250);
+      log(tr(`🩸 <b>${def.hero.name}</b> истекает кровью до конца боя`, `🩸 <b>${def.hero.name}</b> is bleeding until the end of the bout`), att.hero.color);
     }
     if (ev.injury) {
       const inj = INJURY_BY_ID[ev.injury];
@@ -937,10 +938,10 @@ const Engine = (() => {
       def.el.querySelector('.hp-max').textContent = def.maxHp;
       renderHp(def);
       def.charge.forEach((_, b) => renderCharge(def, b, true));
-      log(`✚ <b>${def.hero.name}</b> получает травму: ${inj.icon} ${inj.name}`, '#ff4b5c');
+      log(tr(`✚ <b>${def.hero.name}</b> получает травму: ${inj.icon} ${inj.name}`, `✚ <b>${def.hero.name}</b> is injured: ${inj.icon} ${inj.name}`), '#ff4b5c');
     }
     if (ev.drainPct > 0) {
-      cardPop(def, `🔗 −${ev.drainPct}% заряда`, 'info', 250);
+      cardPop(def, tr(`🔗 −${ev.drainPct}% заряда`, `🔗 −${ev.drainPct}% charge`), 'info', 250);
       def.charge.forEach((_, b) => renderCharge(def, b, true));
     }
     renderStatus(att);
@@ -1003,13 +1004,13 @@ const Engine = (() => {
       const r = Combat.lineOfFive(p, typesGrid());
       if (!r) return true;
       if (r.ram) {
-        banner('Таран!', p.hero.color);
+        banner(tr('Таран!', 'Ram!'), p.hero.color);
         if (!(await strike(p, other(p), 'ram'))) return false;
       } else {
-        banner('Перекус!', p.hero.color);
+        banner(tr('Перекус!', 'Snack Time!'), p.hero.color);
         Sound.play('heal');
-        cardPop(p, r.heal > 0 ? `+${r.heal} ❤` : '🌯 +1 стак', 'heal');
-        if (r.heal > 0) log(`🌯 <b>${p.hero.name}</b> перекусил: +${r.heal} ❤, стаков ${r.snack}`, p.hero.color);
+        cardPop(p, r.heal > 0 ? `+${r.heal} ❤` : tr('🌯 +1 стак', '🌯 +1 stack'), 'heal');
+        if (r.heal > 0) log(tr(`🌯 <b>${p.hero.name}</b> перекусил: +${r.heal} ❤, стаков ${r.snack}`, `🌯 <b>${p.hero.name}</b> had a snack: +${r.heal} ❤, stacks ${r.snack}`), p.hero.color);
         renderHp(p);
         renderStatus(p);
       }
@@ -1037,9 +1038,9 @@ const Engine = (() => {
       for (const i of set) { sx += px(i % COLS); sy += px((i / COLS) | 0); }
       floatText(sx / set.size, sy / set.size, '+' + pts, combo > 1 ? '#fff38a' : '#ffffff', combo > 1);
       Sound.play('clear', { combo, size: Math.max(...groups.map((g) => g.len)) });
-      if (combo >= 2) { banner(mult < combo ? `Комбо ×${mult} 👃` : `Комбо ×${combo}!`, p.hero.color); Sound.play('combo', { combo }); }
-      else if (five) banner('Потрясающе!', p.hero.color);
-      else if (groups.some((g) => g.len === 4)) banner('Отлично!', p.hero.color);
+      if (combo >= 2) { banner(mult < combo ? `${tr('Комбо', 'Combo')} ×${mult} 👃` : `${tr('Комбо', 'Combo')} ×${combo}!`, p.hero.color); Sound.play('combo', { combo }); }
+      else if (five) banner(tr('Потрясающе!', 'Amazing!'), p.hero.color);
+      else if (groups.some((g) => g.len === 4)) banner(tr('Отлично!', 'Great!'), p.hero.color);
 
       // заряд начисляется в момент сжигания, параллельно с исчезновением и падением камней
       const targets = Combat.chargeTargets(p, combo, base);
@@ -1077,7 +1078,7 @@ const Engine = (() => {
         cardPop(p, `🩸 −${st.bleed}`, 'bad');
         renderHp(p);
         Sound.play('hit');
-        log(`🩸 <b>${p.hero.name}</b> теряет ${st.bleed} от кровотечения — ❤ ${p.hp}`, def.hero.color);
+        log(tr(`🩸 <b>${p.hero.name}</b> теряет ${st.bleed} от кровотечения — ❤ ${p.hp}`, `🩸 <b>${p.hero.name}</b> loses ${st.bleed} to bleeding; ❤ ${p.hp}`), def.hero.color);
         if (st.ko) { showKO(p, def); continue; }
         await sleep(450);
         if (id !== gameId) return;
@@ -1085,10 +1086,10 @@ const Engine = (() => {
       // «Сотрясение мозга»: ход пропущен, но засчитан
       if (st && st.skip) {
         restartClass(p.el, 'dazed', 1200);
-        cardPop(p, '💫 Пропускает ход', 'bad');
-        banner(`${p.hero.name} в нокдауне`, '#9aa0c8');
+        cardPop(p, tr('💫 Пропускает ход', '💫 Skips a turn'), 'bad');
+        banner(tr(`${p.hero.name} в нокдауне`, `${p.hero.name} is dazed`), '#9aa0c8');
         Sound.play('dodge');
-        log(`💫 <b>${p.hero.name}</b> приходит в себя после сотрясения и пропускает ход`, '#9aa0c8');
+        log(tr(`💫 <b>${p.hero.name}</b> приходит в себя после сотрясения и пропускает ход`, `💫 <b>${p.hero.name}</b> is recovering from a concussion and skips a turn`), '#9aa0c8');
         p.moves++;
         turn = 1 - turn;
         updateUI();
@@ -1101,11 +1102,11 @@ const Engine = (() => {
       let move;
       if (isHuman) {
         if (!listMoves(typesGrid()).length) {
-          banner('Нет ходов — перемешиваем!', '#a347ff');
+          banner(tr('Нет ходов — перемешиваем!', 'No moves: shuffling!'), '#a347ff');
           await animateShuffle();
           continue;
         }
-        banner('Ваш ход!', p.hero.color);
+        banner(tr('Ваш ход!', 'Your move!'), p.hero.color);
         move = await waitHumanMove();
         if (id !== gameId) return;
       } else {
@@ -1116,7 +1117,7 @@ const Engine = (() => {
         move = BRAINS[p.hero.model](typesGrid());
         setThinking(turn, false);
         if (!move) {
-          banner('Нет ходов — перемешиваем!', '#a347ff');
+          banner(tr('Нет ходов — перемешиваем!', 'No moves: shuffling!'), '#a347ff');
           await animateShuffle();
           continue;
         }
@@ -1139,22 +1140,22 @@ const Engine = (() => {
 
       const coord = (r, c) => `${String.fromCharCode(65 + c)}${ROWS - r}`;
       log(`<b>${p.hero.name}</b>: ${coord(move.r1, move.c1)} ⇄ ${coord(move.r2, move.c2)} — +${res.total}` +
-          (res.combo > 1 ? ` (комбо ×${res.combo})` : ''), p.hero.color);
+          (res.combo > 1 ? ` (${tr('комбо', 'combo')} ×${res.combo})` : ''), p.hero.color);
       if (someoneKO()) continue;
 
       // «Дуэль на закате»: дополнительный удар в последние ходы
       if (Combat.duelTurn(players, p, MOVE_CAP)) {
-        if (!duelAnnounced) { duelAnnounced = true; banner('Дуэль на закате!', HERO_BY_ID.dumpling.color); Sound.play('duel'); await sleep(700); }
+        if (!duelAnnounced) { duelAnnounced = true; banner(tr('Дуэль на закате!', 'Sunset Duel!'), HERO_BY_ID.dumpling.color); Sound.play('duel'); await sleep(700); }
         if (!(await strike(p, def, 'duel'))) return;
         if (someoneKO()) continue;
       }
 
       // конец хода: «Прицеливание»
       const en = Combat.endTurn(p);
-      if (en) { cardPop(p, `🎯 Прицеливание ×${en.aim}`, 'good'); renderStatus(p); }
+      if (en) { cardPop(p, `🎯 ${tr('Прицеливание', 'Aiming')} ×${en.aim}`, 'good'); renderStatus(p); }
 
       if (!listMoves(typesGrid()).length) {
-        banner('Нет ходов — перемешиваем!', '#a347ff');
+        banner(tr('Нет ходов — перемешиваем!', 'No moves: shuffling!'), '#a347ff');
         await animateShuffle();
       }
     }
@@ -1176,10 +1177,10 @@ const Engine = (() => {
     await sleep(ko ? 700 : 0);
     if (id !== gameId) return;
     if (crush) {
-      banner('СОКРУШИТЕЛЬНАЯ ПОБЕДА!', w.hero.color, 'crush');
+      banner(tr('СОКРУШИТЕЛЬНАЯ ПОБЕДА!', 'CRUSHING VICTORY!'), w.hero.color, 'crush');
       Sound.play('crush');
     } else {
-      banner(w ? `Победа: ${w.hero.name}!` : 'Ничья!', w ? w.hero.color : '#ffd21f');
+      banner(w ? tr(`Победа: ${w.hero.name}!`, `${w.hero.name} wins!`) : tr('Ничья!', 'Draw!'), w ? w.hero.color : '#ffd21f');
       Sound.play('matchEnd');
     }
     await sleep(crush ? 2000 : 1400);
@@ -1280,7 +1281,7 @@ const Engine = (() => {
       tween(500, (e) => { gem.flash = 1 - e; }, { delay: (r + c) * 15 });
       return gem;
     }));
-    log('⏭ Матч досчитан мгновенно', '#9aa0c8');
+    log(tr('⏭ Матч досчитан мгновенно', '⏭ Match finished instantly'), '#9aa0c8');
     finish(id);
   }
 
@@ -1306,7 +1307,7 @@ const Engine = (() => {
       updateUI();
       animateIntro().then(() => {
         if (id !== gameId) return;
-        banner(`Первым ходит ${home.name}`, home.color);
+        banner(tr(`Первым ходит ${home.name}`, `${home.name} moves first`), home.color);
         Sound.play('whistle');
         return sleep(900);
       }).then(() => {

@@ -14,21 +14,21 @@ const FACES = {
 };
 
 const HEROES = [
-  { id: 'frog', name: 'Резак', title: 'Два ножа, ноль спокойствия', color: '#5fd35f',
+  { id: 'frog', name: T('Резак', 'Razor'), title: T('Два ножа, ноль спокойствия', 'Two knives, zero chill'), color: '#5fd35f',
     stats: { str: 6, agi: 16, end: 10 } },
-  { id: 'granny', name: 'Дед Отмороз', title: 'Подарки с доставкой в голову', color: '#ff5f6d',
+  { id: 'granny', name: T('Дед Отмороз', 'Santa Psycho'), title: T('Подарки с доставкой в голову', 'Gifts delivered straight to your head'), color: '#ff5f6d',
     stats: { str: 15, agi: 5, end: 8 } },
-  { id: 'sofa', name: 'Чэд Чилингтон', title: 'Абсолютный ноль эмоций', color: '#ff9f43',
+  { id: 'sofa', name: T('Чэд Чилингтон', 'Chad Chillington'), title: T('Абсолютный ноль эмоций', 'Absolute zero emotions'), color: '#ff9f43',
     stats: { str: 6, agi: 13, end: 6 } },
-  { id: 'goose', name: 'Кинг-Банг', title: 'Банановые пистолеты заряжены, спелы и абсолютно незаконны', color: '#3fd9ff',
+  { id: 'goose', name: T('Кинг-Банг', 'King Bang'), title: T('Банановые пистолеты заряжены, спелы и абсолютно незаконны', 'Banana pistols: loaded, ripe and totally illegal'), color: '#3fd9ff',
     stats: { str: 7, agi: 10, end: 10 } },
-  { id: 'plumber', name: 'Офицер Хэртли', title: 'Три в ряд — это уже группа лиц', color: '#5b7cff',
+  { id: 'plumber', name: T('Офицер Хэртли', 'Officer Hartley'), title: T('Три в ряд — это уже группа лиц', 'Three in a row is already a gang'), color: '#5b7cff',
     stats: { str: 12, agi: 6, end: 16 } },
-  { id: 'dumpling', name: 'Ковбой Пыль', title: 'Самый медленный ствол Дикого Запада', color: '#ff8fd8',
+  { id: 'dumpling', name: T('Ковбой Пыль', 'Cowboy Dust'), title: T('Самый медленный ствол Дикого Запада', 'Slowest gun in the Wild West'), color: '#ff8fd8',
     stats: { str: 12, agi: 1, end: 12 } },
-  { id: 'cat', name: 'Генерал Бычара', title: 'Прёт напролом', color: '#b06bff',
+  { id: 'cat', name: T('Генерал Бычара', 'General Bullrush'), title: T('Прёт напролом', 'Charges straight through'), color: '#b06bff',
     stats: { str: 15, agi: 5, end: 16 } },
-  { id: 'shawarma', name: 'Шаурмен', title: 'Завёрнут и опасен', color: '#ffd93d',
+  { id: 'shawarma', name: T('Шаурмен', 'Shawarman'), title: T('Завёрнут и опасен', 'Wrapped and dangerous'), color: '#ffd93d',
     stats: { str: 11, agi: 12, end: 7 } },
 ].map((h) => ({ sprite: `assets/heroes/${h.id}.png`, face: { size: 500, ...FACES[h.id] }, ...h }));
 
@@ -62,9 +62,9 @@ const XP_INJURY_BONUS = 0.3; // +30% базовой награды за кажд
 // Карточки улучшений при повышении уровня: из всего набора выпадают 3 разные случайные.
 // stat — какую характеристику улучшает, amount — на сколько, apply — меняет прокачку героя. ИИ выбирает карточку случайно.
 const UPGRADES = [
-  { id: 'str', icon: '💪', name: 'Сила', desc: '+2 к силе', stat: 'str', amount: 2, apply: (prog) => { prog.bonus.str += 2; } },
-  { id: 'agi', icon: '🤸', name: 'Ловкость', desc: '+2 к ловкости', stat: 'agi', amount: 2, apply: (prog) => { prog.bonus.agi += 2; } },
-  { id: 'end', icon: '🛡️', name: 'Выносливость', desc: '+2 к выносливости', stat: 'end', amount: 2, apply: (prog) => { prog.bonus.end += 2; } },
+  { id: 'str', icon: '💪', name: T('Сила', 'Strength'), desc: T('+2 к силе', '+2 Strength'), stat: 'str', amount: 2, apply: (prog) => { prog.bonus.str += 2; } },
+  { id: 'agi', icon: '🤸', name: T('Ловкость', 'Agility'), desc: T('+2 к ловкости', '+2 Agility'), stat: 'agi', amount: 2, apply: (prog) => { prog.bonus.agi += 2; } },
+  { id: 'end', icon: '🛡️', name: T('Выносливость', 'Endurance'), desc: T('+2 к выносливости', '+2 Endurance'), stat: 'end', amount: 2, apply: (prog) => { prog.bonus.end += 2; } },
 ];
 const UPGRADE_BY_ID = Object.fromEntries(UPGRADES.map((u) => [u.id, u]));
 
@@ -76,20 +76,20 @@ const INJURY_CHANCE = 0.03;
 const INJURY_CRIT_CHANCE = 0.33;
 const INJURY_DURATION = [1, 3];
 const INJURIES = [
-  { id: 'arm', icon: '🦾', name: 'Перелом руки', desc: '(3 × красных камней) % шанс промахнуться ударом' },
-  { id: 'leg', icon: '🦵', name: 'Перелом ноги', desc: 'ловкость −50%' },
-  { id: 'concussion', icon: '💫', name: 'Сотрясение мозга', desc: '(2 × красных камней) % шанс пропустить ход, опыт за бой не начисляется' },
-  { id: 'rib', icon: '🩻', name: 'Перелом ребра', desc: 'пассивка отключена, макс. здоровье −20%' },
-  { id: 'nose', icon: '👃', name: 'Сломан нос', desc: 'множитель комбо на 1 меньше (×2 → ×1, ×3 → ×2…)' },
-  { id: 'teeth', icon: '🦷', name: 'Выбитые зубы', desc: 'удар — крит, заряд обнулён; в следующих боях соперник начинает с половиной заряда' },
+  { id: 'arm', icon: '🦾', name: T('Перелом руки', 'Broken Arm'), desc: T('(3 × красных камней) % шанс промахнуться ударом', '(3 × red gems) % chance to miss a strike') },
+  { id: 'leg', icon: '🦵', name: T('Перелом ноги', 'Broken Leg'), desc: T('ловкость −50%', 'Agility −50%') },
+  { id: 'concussion', icon: '💫', name: T('Сотрясение мозга', 'Concussion'), desc: T('(2 × красных камней) % шанс пропустить ход, опыт за бой не начисляется', '(2 × red gems) % chance to skip a turn, no XP for the bout') },
+  { id: 'rib', icon: '🩻', name: T('Перелом ребра', 'Broken Rib'), desc: T('пассивка отключена, макс. здоровье −20%', 'passive disabled, max HP −20%') },
+  { id: 'nose', icon: '👃', name: T('Сломан нос', 'Broken Nose'), desc: T('множитель комбо на 1 меньше (×2 → ×1, ×3 → ×2…)', 'combo multiplier 1 lower (×2 → ×1, ×3 → ×2…)') },
+  { id: 'teeth', icon: '🦷', name: T('Выбитые зубы', 'Knocked-out Teeth'), desc: T('удар — крит, заряд обнулён; в следующих боях соперник начинает с половиной заряда', 'the strike is a crit, charge reset; in later bouts the opponent starts half-charged') },
 ];
 const INJURY_BY_ID = Object.fromEntries(INJURIES.map((i) => [i.id, i]));
-const boutsWord = (n) => (n % 10 === 1 && n % 100 !== 11 ? 'бой' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'боя' : 'боёв');
+const boutsWord = (n) => (I18N.lang === 'en' ? (n === 1 ? 'bout' : 'bouts') : n % 10 === 1 && n % 100 !== 11 ? 'бой' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'боя' : 'боёв');
 // Текст подсказки к медицинскому кресту. list: [{ id, left }], left = null — получена в этом бою
 function injuryTip(list) {
   return list.map((i) => {
     const inj = INJURY_BY_ID[i.id];
-    const dur = i.left == null ? 'получена в этом бою' : `ещё ${i.left} ${boutsWord(i.left)}`;
+    const dur = i.left == null ? tr('получена в этом бою', 'got in this bout') : tr(`ещё ${i.left} ${boutsWord(i.left)}`, `${i.left} more ${boutsWord(i.left)}`);
     return `${inj.icon} ${inj.name} — ${dur}\n    ${inj.desc}`;
   }).join('\n');
 }
@@ -97,36 +97,44 @@ function injuryTip(list) {
 // Пассивные умения (механика — в combat.js)
 const PASSIVES = {
   dumpling: {
-    icon: '🌅', name: 'Дуэль на закате',
-    desc: 'В последние 3 хода матча после каждого хода и Пыль, и соперник наносят дополнительный удар, не тратя заряд. Удар соперника — 40% урона, у Пыли — полный.',
+    icon: '🌅', name: T('Дуэль на закате', 'Sunset Duel'),
+    desc: T('В последние 3 хода матча после каждого хода и Пыль, и соперник наносят дополнительный удар, не тратя заряд. Удар соперника — 40% урона, у Пыли — полный.',
+      'In the last 3 moves of the match, after every move both Dust and his opponent land an extra strike without spending charge. The opponent deals 40% damage, Dust deals full damage.'),
   },
   frog: {
-    icon: '🩸', name: 'Кровотечение',
-    desc: 'Каждый удар с шансом (красных камней на поле − 10) × 5 % вешает на врага кровотечение до конца боя. В начале каждого хода врага оно наносит (красных камней на поле − 10) × 4 урона.',
+    icon: '🩸', name: T('Кровотечение', 'Bloodletting'),
+    desc: T('Каждый удар с шансом (красных камней на поле − 10) × 5 % вешает на врага кровотечение до конца боя. В начале каждого хода врага оно наносит (красных камней на поле − 10) × 4 урона.',
+      'Every strike has a (red gems on the board − 10) × 5 % chance to make the enemy bleed until the end of the bout. At the start of each enemy turn it deals (red gems on the board − 10) × 4 damage.'),
   },
   cat: {
-    icon: '🐂', name: 'Таран',
-    desc: 'Каждая собранная линия из 5 камней сразу даёт удар, не тратя заряд.',
+    icon: '🐂', name: T('Таран', 'Battering Ram'),
+    desc: T('Каждая собранная линия из 5 камней сразу даёт удар, не тратя заряд.',
+      'Every line of 5 gems instantly lands a strike without spending charge.'),
   },
   plumber: {
-    icon: '🔗', name: 'Наручники',
-    desc: 'Каждая его атака отнимает у соперника (звёзд на поле − 10) × 6 % накопленного заряда — «задерживает» его атаку.',
+    icon: '🔗', name: T('Наручники', 'Handcuffs'),
+    desc: T('Каждая его атака отнимает у соперника (звёзд на поле − 10) × 6 % накопленного заряда — «задерживает» его атаку.',
+      'Each of his attacks drains (stars on the board − 10) × 6 % of the opponent’s charge, “detaining” their attack.'),
   },
   goose: {
-    icon: '🔫', name: 'Два ствола',
-    desc: 'Две шкалы заряда. Первая заряжается как обычно. Вторая дополнительно заряжается от каскадов с комбо ×2 и выше (с множителем не выше ×2); удар с неё наносит 50% урона. Эффекты на заряд действуют на обе.',
+    icon: '🔫', name: T('Два ствола', 'Two Barrels'),
+    desc: T('Две шкалы заряда. Первая заряжается как обычно. Вторая дополнительно заряжается от каскадов с комбо ×2 и выше (с множителем не выше ×2); удар с неё наносит 50% урона. Эффекты на заряд действуют на обе.',
+      'Two charge bars. The first charges as usual. The second also charges from cascades with combo ×2 or higher (multiplier capped at ×2); its strike deals 50% damage. Charge effects apply to both.'),
   },
   shawarma: {
-    icon: '🌯', name: 'Перекус',
-    desc: 'Каждая линия из 5 камней лечит на (зелёных камней − 10) × 4 здоровья и даёт стак: +3% шанса крита ×1,75 за каждый стак.',
+    icon: '🌯', name: T('Перекус', 'Snack Time'),
+    desc: T('Каждая линия из 5 камней лечит на (зелёных камней − 10) × 4 здоровья и даёт стак: +3% шанса крита ×1,75 за каждый стак.',
+      'Every line of 5 gems heals (green gems − 10) × 4 HP and gives a stack: +3% chance of a ×1.75 crit per stack.'),
   },
   sofa: {
-    icon: '😐', name: 'Невозмутимость',
-    desc: 'С шансом 10% + (фиолетовых камней на поле − 10) × 5 % полностью игнорирует входящий удар — «даже не моргнул».',
+    icon: '😐', name: T('Невозмутимость', 'Unbothered'),
+    desc: T('С шансом 10% + (фиолетовых камней на поле − 10) × 5 % полностью игнорирует входящий удар — «даже не моргнул».',
+      'With a 10% + (purple gems on the board − 10) × 5 % chance he fully ignores an incoming strike: “didn’t even blink”.'),
   },
   granny: {
-    icon: '🎯', name: 'Хедшот',
-    desc: 'Каждый его ход без полученного и нанесённого урона даёт стак «Прицеливания»: +7% шанса крита ×2. Любой удар с его участием сбрасывает все стаки.',
+    icon: '🎯', name: T('Хедшот', 'Headshot'),
+    desc: T('Каждый его ход без полученного и нанесённого урона даёт стак «Прицеливания»: +7% шанса крита ×2. Любой удар с его участием сбрасывает все стаки.',
+      'Every turn of his without taking or dealing damage gives an “Aiming” stack: +7% chance of a ×2 crit. Any strike involving him resets all stacks.'),
   },
 };
 
@@ -134,24 +142,31 @@ const HERO_BY_ID = Object.fromEntries(HEROES.map((h) => [h.id, h]));
 
 const MODELS = {
   greedy: {
-    name: 'Жадный', icon: '💰',
-    desc: 'Хватает самые жирные очки прямо сейчас, а о будущем пусть думают другие.',
+    name: T('Жадный', 'Greedy'), icon: '💰',
+    desc: T('Хватает самые жирные очки прямо сейчас, а о будущем пусть думают другие.',
+      'Grabs the fattest points right now and lets others worry about the future.'),
   },
   strategist: {
-    name: 'Стратег', icon: '♟️',
-    desc: 'Думает на ход вперёд и старается не оставлять сопернику подарков.',
+    name: T('Стратег', 'Strategist'), icon: '♟️',
+    desc: T('Думает на ход вперёд и старается не оставлять сопернику подарков.',
+      'Thinks one move ahead and tries not to leave gifts for the opponent.'),
   },
   mystic: {
-    name: 'Мистик', icon: '🔮',
-    desc: 'Гадает на будущее: прокручивает десятки случайных вариантов падения камней и верит в лучший.',
+    name: T('Мистик', 'Mystic'), icon: '🔮',
+    desc: T('Гадает на будущее: прокручивает десятки случайных вариантов падения камней и верит в лучший.',
+      'Reads the future: plays out dozens of random gem drops and trusts the best one.'),
   },
 };
 
 const STATS = [
-  { key: 'str', name: 'Сила', icon: '💪' },
-  { key: 'agi', name: 'Ловкость', icon: '🤸' },
-  { key: 'end', name: 'Выносливость', icon: '🛡️' },
+  { key: 'str', name: T('Сила', 'Strength'), icon: '💪' },
+  { key: 'agi', name: T('Ловкость', 'Agility'), icon: '🤸' },
+  { key: 'end', name: T('Выносливость', 'Endurance'), icon: '🛡️' },
 ];
+
+// все тексты данных — на текущем языке
+I18N.track(...HEROES, ...UPGRADES, ...INJURIES, ...Object.values(PASSIVES), ...Object.values(MODELS), ...STATS);
+I18N.applyData();
 
 // Аватарка-кружок (лицо из спрайта)
 function avatarStyle(h) {

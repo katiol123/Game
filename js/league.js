@@ -23,8 +23,49 @@ const League = (() => {
     const roster = {};
     HEROES.forEach((h, i) => {
       roster[h.id] = { model: models[i % models.length] };
+      normalizeProgress(roster[h.id]);
     });
     return roster;
+  }
+
+  /* ---------- прокачка ---------- */
+  // xp — опыт на текущем уровне, pending — сколько улучшений ещё не выбрано, picks — история выборов
+  function normalizeProgress(e) {
+    if (typeof e.xp !== 'number') e.xp = 0;
+    if (typeof e.level !== 'number') e.level = 1;
+    if (!e.bonus) e.bonus = { str: 0, agi: 0, end: 0 };
+    if (!Array.isArray(e.picks)) e.picks = [];
+    if (typeof e.pending !== 'number') e.pending = 0;
+    return e;
+  }
+
+  // Сколько опыта получает сторона ('home' | 'away') за матч
+  function xpGain(res, side) {
+    const o = outcome(res);
+    if (o === 'draw') return XP_REWARD.draw;
+    if (o !== side) return XP_REWARD.loss;
+    return res.crush ? XP_REWARD.crush : XP_REWARD.win;
+  }
+
+  // Начисляет опыт, повышает уровни (излишек переносится), копит невыбранные улучшения
+  function addXp(e, amount) {
+    const before = { xp: e.xp, level: e.level };
+    e.xp += amount;
+    let ups = 0;
+    while (e.xp >= xpToNext(e.level)) { e.xp -= xpToNext(e.level); e.level++; ups++; }
+    e.pending += ups;
+    return { amount, before, after: { xp: e.xp, level: e.level }, ups };
+  }
+
+  // 3 разные случайные карточки из всего набора улучшений
+  function rollUpgrades(n = 3) {
+    return shuffle(UPGRADES).slice(0, Math.min(n, UPGRADES.length));
+  }
+
+  function applyUpgrade(e, up) {
+    up.apply(e);
+    e.picks.push(up.id);
+    e.pending = Math.max(0, e.pending - 1);
   }
 
   // Исход матча: 'home' | 'away' | 'draw'. Старые сохранения без winner — по очкам.
@@ -110,7 +151,10 @@ const League = (() => {
   function load() {
     try {
       const s = JSON.parse(localStorage.getItem(KEY));
-      if (s && s.version === 1 && s.schedule && s.roster && HEROES.every((h) => s.roster[h.id])) return s;
+      if (s && s.version === 1 && s.schedule && s.roster && HEROES.every((h) => s.roster[h.id])) {
+        Object.values(s.roster).forEach(normalizeProgress); // старые сохранения — без прокачки
+        return s;
+      }
     } catch (e) { /* нет доступа к хранилищу */ }
     return null;
   }
@@ -121,5 +165,5 @@ const League = (() => {
     try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
   }
 
-  return { createRoster, outcome, bergerSchedule, create, standings, heroMatches, finished, load, save, clear };
+  return { createRoster, outcome, xpGain, addXp, rollUpgrades, applyUpgrade, bergerSchedule, create, standings, heroMatches, finished, load, save, clear };
 })();

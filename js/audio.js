@@ -215,6 +215,17 @@ const Sound = (() => {
     },
 
     // --- бой ---
+    levelup() {
+      [60, 64, 67, 72, 76, 79, 84].forEach((n, i) => tone(note(n), 0.18, { type: 'triangle', vol: 0.13, delay: i * 0.06 }));
+      [72, 76, 79, 84].forEach((n) => tone(note(n), 0.9, { type: 'sine', vol: 0.09, delay: 0.45 }));
+      noise(0.8, { vol: 0.08, from: 6000, to: 2500, type: 'highpass', delay: 0.4 });
+    },
+    crush() {
+      tone(110, 0.8, { type: 'sine', vol: 0.5, slide: 35 });
+      noise(0.6, { vol: 0.3, from: 3000, to: 200, type: 'lowpass' });
+      [67, 72, 76, 79, 84].forEach((n, i) => tone(note(n), 0.3, { type: 'square', vol: 0.08, delay: 0.2 + i * 0.1 }));
+      [72, 79, 84].forEach((n) => tone(note(n), 1.2, { type: 'triangle', vol: 0.12, delay: 0.75 }));
+    },
     dodge() {
       noise(0.25, { vol: 0.18, from: 2500, to: 600, q: 1 });
       tone(note(79), 0.15, { type: 'sine', vol: 0.12 });

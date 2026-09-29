@@ -46,6 +46,22 @@ const COMBAT = {
   attackCost: (s) => Math.round(6100 / (8.5 + s.agi)),
 };
 
+/*
+ * Прокачка. За бой: сокрушительная победа (у победителя > 50% здоровья) +50, победа +30, ничья +10.
+ * Для уровня 2 нужно 50 опыта, каждый следующий — на 10 больше; излишек переносится.
+ */
+const XP_REWARD = { crush: 50, win: 30, draw: 10, loss: 0 };
+const xpToNext = (level) => 50 + (level - 1) * 10;
+
+// Карточки улучшений при повышении уровня: из всего набора выпадают 3 разные случайные.
+// stat — какую характеристику улучшает, apply — меняет прокачку героя. ИИ выбирает карточку случайно.
+const UPGRADES = [
+  { id: 'str', icon: '💪', name: 'Сила', desc: '+1 к силе', stat: 'str', apply: (prog) => { prog.bonus.str++; } },
+  { id: 'agi', icon: '🤸', name: 'Ловкость', desc: '+1 к ловкости', stat: 'agi', apply: (prog) => { prog.bonus.agi++; } },
+  { id: 'end', icon: '🛡️', name: 'Выносливость', desc: '+1 к выносливости', stat: 'end', apply: (prog) => { prog.bonus.end++; } },
+];
+const UPGRADE_BY_ID = Object.fromEntries(UPGRADES.map((u) => [u.id, u]));
+
 // Пассивные умения (механика — в combat.js)
 const PASSIVES = {
   dumpling: {

@@ -24,8 +24,10 @@ const App = (() => {
     const h = HERO_BY_ID[id];
     const r = roster[id];
     const m = MODELS[r.model];
-    // характеристики всегда берутся из data.js (в старых сохранениях были случайные)
-    return { ...h, ...r, stats: h.stats, modelName: m.name, modelIcon: m.icon, modelDesc: m.desc,
+    // базовые характеристики — из data.js (в старых сохранениях были случайные), плюс прокачка
+    const b = r.bonus || { str: 0, agi: 0, end: 0 };
+    const stats = { str: h.stats.str + b.str, agi: h.stats.agi + b.agi, end: h.stats.end + b.end };
+    return { ...h, ...r, baseStats: h.stats, bonus: b, stats, modelName: m.name, modelIcon: m.icon, modelDesc: m.desc,
       isPlayer: !!state && state.playerId === id };
   }
 
@@ -109,10 +111,12 @@ const App = (() => {
   function statBars(h, animate) {
     return `<div class="stats">${STATS.map((s) => {
       const v = h.stats[s.key];
+      const plus = h.bonus ? h.bonus[s.key] : 0;
+      const k = Math.min(1, v / 20);
       return `<div class="stat">
         <span class="st-name">${s.icon} ${s.name}</span>
-        <div class="bar"><i style="--v:${animate ? 0 : v / 20}" data-v="${v / 20}"></i></div>
-        <b class="st-val" data-v="${v}">${animate ? 0 : v}</b><small>/20</small>
+        <div class="bar"><i style="--v:${animate ? 0 : k}" data-v="${k}"></i></div>
+        <b class="st-val" data-v="${v}">${animate ? 0 : v}</b><small>/20${plus ? ` <em class="st-bonus" title="Прокачка">+${plus}</em>` : ''}</small>
       </div>`;
     }).join('')}</div>
     <div class="combat">
@@ -440,7 +444,7 @@ const App = (() => {
           ${ava(H)}<div class="fx-name">${link(H)}<small>дома${H.isPlayer ? ' · вы' : ''}</small></div>
         </div>
         <div class="fx-mid">
-          ${res ? `<div class="fx-score"><b>${res.home}</b><i>:</i><b>${res.away}</b></div><small>${draw ? 'ничья' : res.ko ? 'нокаут' : 'завершён'}</small>`
+          ${res ? `<div class="fx-score"><b>${res.home}</b><i>:</i><b>${res.away}</b></div><small>${draw ? 'ничья' : res.crush ? 'сокрушительная' : res.ko ? 'нокаут' : 'завершён'}</small>`
                 : '<div class="fx-vs">VS</div><small>предстоит</small>'}
         </div>
         <div class="fx-side away ${sideCls(aw)}">
@@ -507,6 +511,7 @@ const App = (() => {
         <div class="hp-info">
           <div class="kicker hc">${h.title}</div>
           <h1 class="glitch" data-text="${h.name}">${h.name}${h.isPlayer ? ' <em class="you-tag">ВЫ</em>' : ''}</h1>
+          ${xpBlock(h)}
           ${statBars(h, true)}
           ${passiveBadge(h)}
           ${modelBadge(h)}
@@ -554,6 +559,29 @@ const App = (() => {
         }).join('')}
       </div>`;
     animateBars($('heroPage'));
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const x = $('heroPage').querySelector('.xp-bar i');
+      if (x) x.style.setProperty('--x', x.dataset.x);
+    }));
+  }
+
+  // Уровень и шкала опыта (только в карточке героя)
+  function xpBlock(h) {
+    const need = xpToNext(h.level);
+    const picks = {};
+    h.picks.forEach((id) => { picks[id] = (picks[id] || 0) + 1; });
+    const pickList = Object.entries(picks).map(([id, n]) => {
+      const u = UPGRADE_BY_ID[id];
+      return u ? `<span title="${u.name}: ${u.desc}">${u.icon} ×${n}</span>` : '';
+    }).join('');
+    return `<div class="xp">
+      <div class="xp-top">
+        <span class="xp-lvl">Уровень <b>${h.level}</b></span>
+        <span class="xp-num"><b>${h.xp}</b> / ${need} опыта</span>
+      </div>
+      <div class="xp-bar"><i style="--x:0" data-x="${h.xp / need}"></i></div>
+      ${pickList ? `<div class="xp-picks"><small>Улучшения:</small>${pickList}</div>` : ''}
+    </div>`;
   }
 
   function openHero(id) {
@@ -599,15 +627,62 @@ const App = (() => {
     $('vs').className = 'vs';
   }
 
-  function showResult(H, A, res, last) {
+  // Строки начисления опыта в окне результата
+  function xpRows(xp) {
+    return `<div class="xp-gain">${xp.map(({ h, g }) => `
+      <div class="xg-row ${g.amount ? '' : 'zero'}" style="--hc:${h.color}">
+        ${ava(h)}
+        <div class="xg-main">
+          <div class="xg-top"><b>${h.name}</b><span class="xg-lvl">Ур. <em>${g.before.level}</em></span>
+            <span class="xg-amt">+${g.amount} опыта</span></div>
+          <div class="xg-bar"><i style="width:${(g.before.xp / xpToNext(g.before.level)) * 100}%"></i></div>
+          <div class="xg-num">${g.before.xp} / ${xpToNext(g.before.level)}</div>
+        </div>
+        <div class="xg-up">НОВЫЙ УРОВЕНЬ!</div>
+      </div>`).join('')}</div>`;
+  }
+
+  // Анимация шкал опыта: дозаполнение, при повышении уровня — вспышка и перенос остатка
+  function animateXp(xp) {
+    const k = 1 / Math.min(2, Engine.getSpeed());
+    document.querySelectorAll('#resultCard .xg-row').forEach((row, i) => {
+      const { g } = xp[i];
+      const bar = row.querySelector('.xg-bar i');
+      const num = row.querySelector('.xg-num');
+      const setNum = (x, lvl) => { num.textContent = `${x} / ${xpToNext(lvl)}`; };
+      setTimeout(() => {
+        if (!g.ups) {
+          bar.style.width = (g.after.xp / xpToNext(g.after.level)) * 100 + '%';
+          setNum(g.after.xp, g.after.level);
+          return;
+        }
+        bar.style.width = '100%';
+        setNum(xpToNext(g.before.level), g.before.level);
+        setTimeout(() => {
+          row.classList.add('leveled');
+          row.querySelector('.xg-lvl em').textContent = g.after.level;
+          Sound.play('levelup');
+          bar.style.transition = 'none';
+          bar.style.width = '0%';
+          void bar.offsetWidth;
+          bar.style.transition = '';
+          bar.style.width = (g.after.xp / xpToNext(g.after.level)) * 100 + '%';
+          setNum(g.after.xp, g.after.level);
+        }, 750 * k);
+      }, (600 + i * 250) * k);
+    });
+  }
+
+  function showResult(H, A, res, last, xp = []) {
     return new Promise((resolve) => {
       const o = League.outcome(res);
       const w = o === 'home' ? H : o === 'away' ? A : null;
       const card = $('resultCard');
       card.style.setProperty('--hc', w ? w.color : '#ffd21f');
       card.innerHTML = `
+        ${res.crush ? '<div class="crush-stamp">Сокрушительная победа</div>' : ''}
         <div class="res-sprites">${w ? `<img src="${w.sprite}" alt="" />` : `<img src="${H.sprite}" alt="" /><img src="${A.sprite}" alt="" />`}</div>
-        <div class="kicker hc">${w ? 'Победа нокаутом' : 'Ничья — нокаута не было'}</div>
+        <div class="kicker hc">${w ? (res.crush ? 'Сокрушительная победа нокаутом' : 'Победа нокаутом') : 'Ничья — нокаута не было'}</div>
         <h2>${w ? w.name : 'Оба устояли!'}</h2>
         <div class="res-score">
           <span style="color:${H.color}">${H.name}</span>
@@ -615,12 +690,14 @@ const App = (() => {
           <span style="color:${A.color}">${A.name}</span>
         </div>
         <p class="res-sub">Очки за камни: ${res.home} : ${res.away}</p>
+        ${xp.length ? xpRows(xp) : ''}
         <p class="countdown" id="resCount"></p>
         <button class="cta" id="resNext"><span>${last ? 'К турнирной таблице' : 'Следующий матч'}</span></button>`;
       $('resultOverlay').classList.add('show');
       Sound.play(w ? 'win' : 'draw');
+      if (xp.length) animateXp(xp);
 
-      let left = 6;
+      let left = xp.some((x) => x.g.ups) ? 8 : 6;
       let timer = null;
       const done = () => {
         clearInterval(timer);
@@ -661,9 +738,12 @@ const App = (() => {
       const playing = Engine.play({ home: H, away: A, info });
       await vsOut();
       const res = await playing;
-      m.result = { home: res.home, away: res.away, winner: res.winner, ko: res.ko, hp: res.hp };
+      m.result = { home: res.home, away: res.away, winner: res.winner, ko: res.ko, crush: res.crush, hp: res.hp };
+      // опыт за бой обоим бойцам
+      const xp = [[H, 'home'], [A, 'away']].map(([h, side]) => ({ h, g: League.addXp(roster[h.id], League.xpGain(m.result, side)) }));
       League.save(state);
-      await showResult(H, A, res, round.every((x) => x.result));
+      await showResult(H, A, res, round.every((x) => x.result), xp);
+      await resolveLevelUps([H.id, A.id]);
     }
 
     state.round++;
@@ -684,6 +764,77 @@ const App = (() => {
     renderSchedule();
     busy = false;
     if (League.finished(state)) setTimeout(celebrate, 1500);
+  }
+
+  /* ---------------------------------------------------------
+   *  Новый уровень: выбор одной из трёх карточек улучшений
+   * ------------------------------------------------------- */
+  // ИИ выбирает карточку случайно
+  const aiPick = (cards) => cards[Math.floor(Math.random() * cards.length)];
+
+  function levelUpScreen(id) {
+    return new Promise((resolve) => {
+      const h = hero(id);
+      const cards = League.rollUpgrades(3);
+      const human = h.isPlayer;
+      const el = document.createElement('div');
+      el.className = 'lvlup';
+      el.style.setProperty('--hc', h.color);
+      el.innerHTML = `
+        <div class="lu-rays"></div>
+        <div class="lu-box">
+          <div class="lu-head">
+            <img src="${h.sprite}" alt="" />
+            <div>
+              <div class="kicker hc">Новый уровень!</div>
+              <h2>${h.name}</h2>
+              <div class="lu-level">Уровень <b>${h.level - h.pending + 1}</b></div>
+            </div>
+          </div>
+          <p class="lu-hint">${human ? 'Выберите улучшение' : 'ИИ выбирает улучшение…'}</p>
+          <div class="lu-cards">${cards.map((c, i) => {
+            const cur = c.stat ? h.stats[c.stat] : null;
+            return `<button class="up-card" data-i="${i}" style="--i:${i}" ${human ? '' : 'disabled'}>
+              <span class="uc-icon">${c.icon}</span><b>${c.name}</b><small>${c.desc}</small>
+              ${cur !== null ? `<em>${cur} → ${cur + 1}</em>` : ''}
+            </button>`;
+          }).join('')}</div>
+        </div>`;
+      $('fx').append(el);
+      Sound.play('levelup');
+      const k = 1 / Math.min(2, Engine.getSpeed());
+
+      const choose = (i) => {
+        if (el.dataset.done) return;
+        el.dataset.done = '1';
+        const up = cards[i];
+        League.applyUpgrade(roster[id], up);
+        League.save(state);
+        Sound.play('select');
+        el.querySelectorAll('.up-card').forEach((b, j) => b.classList.add(j === i ? 'chosen' : 'faded'));
+        el.querySelector('.lu-hint').textContent = `${human ? 'Выбрано' : 'ИИ выбрал'}: ${up.icon} ${up.name} — ${up.desc}`;
+        setTimeout(() => {
+          el.classList.add('out');
+          setTimeout(() => { el.remove(); resolve(); }, 450);
+        }, 1300 * k);
+      };
+      if (human) {
+        el.querySelector('.lu-cards').addEventListener('click', (e) => {
+          const b = e.target.closest('.up-card');
+          if (b) choose(+b.dataset.i);
+        });
+      } else {
+        const pick = aiPick(cards);
+        setTimeout(() => choose(cards.indexOf(pick)), 1500 * k);
+      }
+    });
+  }
+
+  // Проводит все невыбранные улучшения указанных героев (по одному экрану на уровень)
+  async function resolveLevelUps(ids) {
+    for (const id of ids) {
+      while (roster[id].pending > 0) await levelUpScreen(id);
+    }
   }
 
   /* ---------------------------------------------------------
@@ -821,6 +972,10 @@ const App = (() => {
       syncTabs(true);
       show('league');
       stagger($('pane-table'));
+      // страницу закрыли во время выбора улучшения — предлагаем выбрать снова
+      if (HEROES.some((h) => roster[h.id].pending > 0)) {
+        setTimeout(() => { busy = true; resolveLevelUps(HEROES.map((h) => h.id)).then(() => { busy = false; }); }, 900);
+      }
     } else {
       show('select');
     }

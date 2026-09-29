@@ -739,11 +739,11 @@ const Engine = (() => {
   /* ---------------------------------------------------------
    *  UI матча
    * ------------------------------------------------------- */
-  function banner(text, color = '#ffd21f') {
+  function banner(text, color = '#ffd21f', cls = '') {
     const b = $('banner');
     b.textContent = text;
     b.style.setProperty('--bc', color);
-    b.classList.remove('show');
+    b.className = 'banner' + (cls ? ' ' + cls : '');
     void b.offsetWidth;
     b.classList.add('show');
   }
@@ -1109,15 +1109,22 @@ const Engine = (() => {
     // победа только нокаутом; ходы кончились без нокаута — ничья
     const ko = a.hp <= 0 || b.hp <= 0;
     const w = ko ? (a.hp > 0 ? a : b) : null;
+    // сокрушительная победа: у победителя осталось больше половины здоровья
+    const crush = !!w && w.hp > w.maxHp * 0.5;
     for (let i = 0; i < 24; i++) {
       const gx = rand(COLS), gy = rand(ROWS);
       if (board[gy] && board[gy][gx]) burst(board[gy][gx]);
     }
     await sleep(ko ? 700 : 0);
     if (id !== gameId) return;
-    banner(w ? `Победа: ${w.hero.name}!` : 'Ничья!', w ? w.hero.color : '#ffd21f');
-    Sound.play('matchEnd');
-    await sleep(1400);
+    if (crush) {
+      banner('СОКРУШИТЕЛЬНАЯ ПОБЕДА!', w.hero.color, 'crush');
+      Sound.play('crush');
+    } else {
+      banner(w ? `Победа: ${w.hero.name}!` : 'Ничья!', w ? w.hero.color : '#ffd21f');
+      Sound.play('matchEnd');
+    }
+    await sleep(crush ? 2000 : 1400);
     if (id !== gameId) return;
     const cur = current;
     current = null;
@@ -1125,6 +1132,7 @@ const Engine = (() => {
       home: a.score, away: b.score,
       winner: w === a ? 'home' : w === b ? 'away' : null,
       ko,
+      crush,
       hp: [Math.max(0, a.hp), Math.max(0, b.hp)],
       maxHp: [a.maxHp, b.maxHp],
       moves: [a.moves, b.moves],

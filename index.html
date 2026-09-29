@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Лига Трёх Камней</title>
+  <title>Лига Шести Камней</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet" />
@@ -21,7 +21,7 @@
   <section class="screen" id="scr-select">
     <div class="sel-glow" id="selGlow"></div>
     <header class="sel-head">
-      <div class="kicker">Лига Трёх Камней · сезон I</div>
+      <div class="kicker">Лига Шести Камней · сезон I</div>
       <h1>Выбери своего героя</h1>
     </header>
 
@@ -48,7 +48,7 @@
   <section class="screen" id="scr-league">
     <header class="league-head">
       <div class="lh-left">
-        <div class="kicker">Лига Трёх Камней</div>
+        <div class="kicker">Лига Шести Камней</div>
         <h1 class="lh-title">Сезон I</h1>
         <div class="lh-sub" id="tourInfo"></div>
       </div>
@@ -88,13 +88,18 @@
         <div class="side"></div>
         <div class="name"></div>
         <div class="you" hidden>ВЫ</div>
+        <div class="status"></div>
         <div class="hp">
           <div class="hp-top"><span>❤</span><b class="hp-val">0</b><small>/ <span class="hp-max">0</span></small></div>
           <div class="hp-bar"><i class="hp-ghost"></i><i class="hp-fill"></i></div>
         </div>
-        <div class="charge">
+        <div class="charge c1">
           <div class="charge-bar"><i class="charge-fill"></i></div>
           <small>⚡ <span class="charge-txt">0 / 0</span></small>
+        </div>
+        <div class="charge c2" hidden>
+          <div class="charge-bar"><i class="charge-fill"></i></div>
+          <small>🔫 2-й ствол (комбо) <span class="charge-txt">0 / 0</span></small>
         </div>
         <div class="score">0</div>
         <div class="meta">
@@ -116,13 +121,18 @@
         <div class="side"></div>
         <div class="name"></div>
         <div class="you" hidden>ВЫ</div>
+        <div class="status"></div>
         <div class="hp">
           <div class="hp-top"><span>❤</span><b class="hp-val">0</b><small>/ <span class="hp-max">0</span></small></div>
           <div class="hp-bar"><i class="hp-ghost"></i><i class="hp-fill"></i></div>
         </div>
-        <div class="charge">
+        <div class="charge c1">
           <div class="charge-bar"><i class="charge-fill"></i></div>
           <small>⚡ <span class="charge-txt">0 / 0</span></small>
+        </div>
+        <div class="charge c2" hidden>
+          <div class="charge-bar"><i class="charge-fill"></i></div>
+          <small>🔫 2-й ствол (комбо) <span class="charge-txt">0 / 0</span></small>
         </div>
         <div class="score">0</div>
         <div class="meta">
@@ -164,6 +174,7 @@
   <script src="js/audio.js"></script>
   <script src="js/data.js"></script>
   <script src="js/league.js"></script>
+  <script src="js/combat.js"></script>
   <script src="js/engine.js"></script>
   <script src="js/app.js"></script>
 </body>

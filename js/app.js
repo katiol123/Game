@@ -138,6 +138,12 @@ const App = (() => {
     }));
   }
 
+  function passiveBadge(h) {
+    const ps = PASSIVES[h.id];
+    return `<div class="passive-badge"><span class="pb-icon">${ps.icon}</span>
+      <div><small>Пассивное умение</small><b>${ps.name}</b><p>${ps.desc}</p></div></div>`;
+  }
+
   function modelBadge(h) {
     return `<div class="model-badge"><span class="mb-icon">${h.modelIcon}</span>
       <div><small>Модель поведения</small><b>${h.modelName}</b><p>${h.modelDesc}</p></div></div>`;
@@ -208,7 +214,8 @@ const App = (() => {
     box.innerHTML = `
       <div class="kicker hc">${h.title}</div>
       <h2 class="glitch" data-text="${h.name}">${h.name}</h2>
-      ${statBars(h, true)}`;
+      ${statBars(h, true)}
+      ${passiveBadge(h)}`;
     box.classList.remove('enter-l', 'enter-r', 'enter');
     void box.offsetWidth;
     box.classList.add(dir < 0 ? 'enter-l' : dir > 0 ? 'enter-r' : 'enter');
@@ -501,6 +508,7 @@ const App = (() => {
           <div class="kicker hc">${h.title}</div>
           <h1 class="glitch" data-text="${h.name}">${h.name}${h.isPlayer ? ' <em class="you-tag">ВЫ</em>' : ''}</h1>
           ${statBars(h, true)}
+          ${passiveBadge(h)}
           ${modelBadge(h)}
         </div>
       </div>
@@ -696,7 +704,7 @@ const App = (() => {
       <div class="champ-card">
         <div class="crown">👑</div>
         <img src="${champ.sprite}" alt="" />
-        <div class="kicker hc">Чемпион Лиги Трёх Камней</div>
+        <div class="kicker hc">Чемпион Лиги Шести Камней</div>
         <h2>${champ.name}</h2>
         <p>${st[0].pts} очков · ${st[0].w} побед · ${st[0].d} ничьих · ${st[0].l} поражений</p>
         <p class="my">${!state.playerId ? 'Вы наблюдали за турниром как зритель.'

@@ -124,6 +124,14 @@ button:disabled { opacity: 0.45; cursor: default; transform: none; }
 .combat span { font-size: 13px; color: var(--muted); padding: 5px 10px; border-radius: 99px;
   background: rgba(255, 255, 255, 0.06); border: 1px solid color-mix(in srgb, var(--hc) 30%, transparent); }
 .combat b { color: var(--text); font-variant-numeric: tabular-nums; }
+.passive-badge { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 14px; margin-bottom: 10px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--hc) 22%, rgba(255, 255, 255, 0.03)), rgba(255, 255, 255, 0.03));
+  border: 1px solid color-mix(in srgb, var(--hc) 55%, transparent); box-shadow: inset 0 0 20px color-mix(in srgb, var(--hc) 12%, transparent); }
+.pb-icon { font-size: 28px; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 12px; flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.3); box-shadow: 0 0 14px color-mix(in srgb, var(--hc) 40%, transparent); }
+.passive-badge small { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: var(--hc); display: block; }
+.passive-badge b { font-family: var(--display); font-weight: 400; font-size: 18px; }
+.passive-badge p { font-size: 13px; color: #cfd3f5; margin-top: 2px; line-height: 1.4; }
 .model-badge { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 14px;
   background: color-mix(in srgb, var(--hc) 10%, rgba(255, 255, 255, 0.04)); border: 1px solid color-mix(in srgb, var(--hc) 35%, transparent); }
 .mb-icon { font-size: 30px; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 12px; background: rgba(0, 0, 0, 0.25); flex-shrink: 0; }
@@ -432,10 +440,27 @@ canvas { display: block; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0,
 .player.ko::before { content: "K.O."; position: absolute; left: 50%; top: 70px; transform: translateX(-50%) rotate(-10deg); z-index: 2;
   font-family: var(--display); font-size: 44px; color: #ff3b4e; text-shadow: 0 0 20px #ff3b4e, 0 3px 0 #000; animation: koIn 0.5s cubic-bezier(.2, 1.8, .4, 1); }
 @keyframes koIn { from { transform: translateX(-50%) scale(3) rotate(-30deg); opacity: 0; } }
-.dmg-pop { position: absolute; left: 50%; top: 60px; z-index: 3; pointer-events: none; font-family: var(--display); font-weight: 400;
-  font-size: 34px; color: #ff4b5c; text-shadow: 0 0 14px rgba(255, 60, 60, 0.8), 0 3px 0 #000; animation: dmgPop 1s ease-out forwards; }
-@keyframes dmgPop { 0% { transform: translate(-50%, 10px) scale(0.4); opacity: 0; } 20% { transform: translate(-50%, 0) scale(1.3); opacity: 1; }
-  100% { transform: translate(-50%, -50px) scale(1); opacity: 0; } }
+.card-pop { position: absolute; left: 50%; top: 60px; z-index: 3; pointer-events: none; font-family: var(--display); font-weight: 400;
+  white-space: nowrap; font-size: 30px; text-shadow: 0 3px 0 #000; animation: cardPop 1.1s ease-out both; }
+.card-pop.dmg { color: #ff4b5c; text-shadow: 0 0 14px rgba(255, 60, 60, 0.8), 0 3px 0 #000; }
+.card-pop.crit { font-size: 36px; color: #ffd21f; text-shadow: 0 0 18px #ff6a00, 0 3px 0 #000; }
+.card-pop.heal { color: #3ddc84; text-shadow: 0 0 14px rgba(61, 220, 132, 0.8), 0 3px 0 #000; }
+.card-pop.bad { font-size: 20px; top: 95px; color: #ff6b7a; text-shadow: 0 0 10px #c0102a, 0 2px 0 #000; }
+.card-pop.info, .card-pop.good { font-size: 18px; top: 95px; font-family: "Rubik", sans-serif; font-weight: 900; }
+.card-pop.info { color: #e8dcff; text-shadow: 0 0 10px #8b3dff, 0 2px 0 #000; }
+.card-pop.good { color: #9ff0ff; text-shadow: 0 0 10px #2f86ff, 0 2px 0 #000; }
+@keyframes cardPop { 0% { transform: translate(-50%, 10px) scale(0.4); opacity: 0; } 18% { transform: translate(-50%, 0) scale(1.25); opacity: 1; }
+  30% { transform: translate(-50%, 0) scale(1); } 100% { transform: translate(-50%, -50px) scale(1); opacity: 0; } }
+.status { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin: 4px 0 2px; min-height: 22px; }
+.st-chip { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap; cursor: help;
+  background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.15); }
+.st-chip.passive { border-color: color-mix(in srgb, var(--pc) 60%, transparent); background: color-mix(in srgb, var(--pc) 16%, transparent); }
+.st-chip.bad { color: #ff9aa5; border-color: rgba(255, 60, 80, 0.6); background: rgba(255, 60, 80, 0.15); animation: hpLow 1.2s ease-in-out infinite; }
+.st-chip.good { color: #9ff0ff; border-color: rgba(80, 180, 255, 0.5); background: rgba(47, 134, 255, 0.15); }
+.charge.c2 .charge-fill { background: linear-gradient(90deg, #fff3a0, #ffd21f); box-shadow: 0 0 10px #ffd21f; }
+.charge.c2 { --pc: #ffd21f; }
+.strike-orb.ram { width: 48px; height: 48px; margin: -24px 0 0 -24px; background: radial-gradient(circle, #fff 0%, #ff6a00 40%, transparent 70%); box-shadow: 0 0 36px 14px #ff3b00; }
+.strike-orb.duel { background: radial-gradient(circle, #fff 0%, #ff9f43 45%, transparent 70%); box-shadow: 0 0 30px 10px #ff7a1a; }
 .dmg-badge { position: absolute; left: -2px; top: -2px; z-index: 2; display: flex; align-items: center; gap: 4px;
   padding: 3px 9px 3px 7px; border-radius: 10px; font-size: 14px; line-height: 1.2;
   background: rgba(13, 11, 36, 0.8); border: 1px solid color-mix(in srgb, var(--pc) 55%, transparent);

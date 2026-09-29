@@ -215,6 +215,24 @@ const Sound = (() => {
     },
 
     // --- бой ---
+    dodge() {
+      noise(0.25, { vol: 0.18, from: 2500, to: 600, q: 1 });
+      tone(note(79), 0.15, { type: 'sine', vol: 0.12 });
+      tone(note(74), 0.25, { type: 'sine', vol: 0.12, delay: 0.1 });
+    },
+    crit() {
+      tone(180, 0.35, { type: 'sine', vol: 0.5, slide: 50 });
+      noise(0.2, { vol: 0.35, from: 5000, to: 800, type: 'lowpass' });
+      tone(note(88), 0.3, { type: 'square', vol: 0.08, delay: 0.05 });
+    },
+    heal() {
+      [72, 76, 79, 84].forEach((n, i) => tone(note(n), 0.25, { type: 'sine', vol: 0.12, delay: i * 0.05 }));
+    },
+    duel() {
+      tone(note(64), 0.5, { type: 'triangle', vol: 0.16 });
+      tone(note(71), 0.8, { type: 'triangle', vol: 0.14, delay: 0.25, slide: note(69) });
+      noise(0.9, { vol: 0.08, from: 400, to: 1500, q: 3, delay: 0.1 });
+    },
     charged() {
       tone(note(84), 0.12, { type: 'triangle', vol: 0.16 });
       tone(note(91), 0.2, { type: 'triangle', vol: 0.14, delay: 0.06 });

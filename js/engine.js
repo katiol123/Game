@@ -160,20 +160,26 @@ const Engine = (() => {
 
   // Симуляция хода с каскадами. random=false: новые фишки неизвестны (-1),
   // random=true: сверху падают случайные камни (как в настоящей игре).
-  function simulate(g, m, random = false) {
+  // record=true: сохраняет шаги каскада (для боевых правил при мгновенном досчёте)
+  function simulate(g, m, random = false, record = false) {
     const h = applyMove(g, m);
     let score = 0, combo = 0, cleared = 0;
+    const steps = [];
     for (;;) {
       const { groups, set } = findMatches(h);
       if (!groups.length) break;
       combo++;
-      score += scoreGroups(groups, combo);
+      const pts = scoreGroups(groups, combo);
+      score += pts;
+      if (record) {
+        steps.push({ combo, pts, ptsCap: scoreGroups(groups, Math.min(combo, 2)), five: groups.filter((gr) => gr.len >= 5).length });
+      }
       cleared += set.size;
       for (const i of set) h[(i / COLS) | 0][i % COLS] = -1;
       collapse(h);
       if (random) fillRandom(h);
     }
-    return { score, combo, cleared, grid: h };
+    return { score, combo, cleared, grid: h, steps };
   }
 
   function bestImmediate(g) {
@@ -763,10 +769,14 @@ const Engine = (() => {
       el.querySelector('.score').textContent = '0';
       el.querySelector('.dmg').textContent = p.dmg;
       el.querySelector('.hp-max').textContent = p.maxHp;
+      el.querySelector('.charge.c2').hidden = p.charge.length < 2;
       el.classList.remove('ko', 'hit', 'lunge');
+      el.querySelectorAll('.card-pop').forEach((x) => x.remove());
       p.el = el;
       renderHp(p, true);
-      renderCharge(p);
+      renderCharge(p, 0, true);
+      if (p.charge.length > 1) renderCharge(p, 1, true);
+      renderStatus(p);
     });
     $('matchInfo').textContent = info || '';
     $('log').innerHTML = '';
@@ -786,7 +796,6 @@ const Engine = (() => {
     const pct = Math.max(0, p.hp) / p.maxHp;
     const fill = box.querySelector('.hp-fill'), ghost = box.querySelector('.hp-ghost');
     if (instant) { fill.style.transition = ghost.style.transition = 'none'; }
-    fill.style.width = ghost.style.width = '';
     fill.style.width = pct * 100 + '%';
     ghost.style.width = pct * 100 + '%';
     box.style.setProperty('--hpc', `hsl(${Math.round(120 * pct)}, 85%, 52%)`);
@@ -795,94 +804,129 @@ const Engine = (() => {
     if (instant) { void box.offsetWidth; fill.style.transition = ghost.style.transition = ''; }
   }
 
-  // Шкала заряда атаки: сколько очков накоплено до следующего удара
+  const chargeEl = (p, bar) => p.el.querySelector(bar ? '.charge.c2' : '.charge.c1');
+
+  // Шкала заряда атаки (bar 0 — основная, 1 — вторая у «Двух стволов»).
   // instant — без плавного перехода (мгновенный сброс на остаток после удара)
-  function renderCharge(p, instant = false) {
-    const el = p.el.querySelector('.charge');
+  function renderCharge(p, bar = 0, instant = false) {
+    const el = chargeEl(p, bar);
     const fill = el.querySelector('.charge-fill');
     fill.style.transitionDuration = (0.25 / speed) + 's'; // анимация шкалы идёт с той же скоростью, что и игра
     if (instant) fill.style.transition = 'none';
-    fill.style.width = Math.min(1, p.charge / p.cost) * 100 + '%';
-    el.querySelector('.charge-txt').textContent = `${Math.min(p.charge, p.cost)} / ${p.cost}`;
+    fill.style.width = Math.min(1, p.charge[bar] / p.cost) * 100 + '%';
+    el.querySelector('.charge-txt').textContent = `${Math.min(p.charge[bar], p.cost)} / ${p.cost}`;
     if (instant) { void fill.offsetWidth; fill.style.transition = ''; }
   }
 
+  // Пассивка и текущие эффекты под именем бойца
+  function renderStatus(p) {
+    const ps = PASSIVES[p.id];
+    const chips = [`<span class="st-chip passive" title="${ps.desc}">${ps.icon} ${ps.name}</span>`];
+    if (p.bleed) chips.push('<span class="st-chip bad" title="Кровотечение: в начале каждого хода (красных камней − 10) × 4 урона">🩸 Истекает кровью</span>');
+    if (p.aim) chips.push(`<span class="st-chip good" title="Прицеливание: ${p.aim * 7}% шанс крита ×2">🎯 ×${p.aim}</span>`);
+    if (p.snack) chips.push(`<span class="st-chip good" title="Перекус: ${p.snack * 3}% шанс крита ×1,75">🌯 ×${p.snack}</span>`);
+    p.el.querySelector('.status').innerHTML = chips.join('');
+  }
+
   // Всплывающая подпись над шкалой заряда: сколько очков перешло на следующий удар
-  function carryTag(p, amount) {
+  function carryTag(p, bar, amount) {
     const tag = document.createElement('b');
     tag.className = 'carry-tag';
     tag.textContent = `+${amount} в запасе`;
     tag.addEventListener('animationend', () => tag.remove(), { once: true });
-    const line = p.el.querySelector('.charge small');
+    const line = chargeEl(p, bar).querySelector('small');
     line.querySelectorAll('.carry-tag').forEach((t) => t.remove());
     line.append(tag);
   }
 
-  const restartClass = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+  // Всплывающая надпись на карточке бойца: урон, лечение, эффекты
+  function cardPop(p, text, cls = 'dmg', delay = 0) {
+    const pop = document.createElement('b');
+    pop.className = 'card-pop ' + cls;
+    pop.textContent = text;
+    pop.style.animationDelay = delay / speed + 'ms';
+    pop.addEventListener('animationend', () => pop.remove(), { once: true });
+    p.el.append(pop);
+  }
 
-  // Удар: снаряд летит от атакующего к защитнику, у того трясётся карточка и падает здоровье
-  async function strike(att, def) {
+  const restartClass = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+  const other = (p) => players[1 - players.indexOf(p)];
+
+  function showKO(def, att) {
+    def.el.classList.add('ko');
+    Sound.play('ko');
+    banner('НОКАУТ!', att ? att.hero.color : '#ff3b4e');
+  }
+
+  // Удар att по def: сначала считается исход (правила в combat.js), потом летит снаряд и показывается результат.
+  // kind: 'charge' — от шкалы, 'ram' — «Таран», 'duel' — «Дуэль на закате»
+  async function strike(att, def, kind = 'charge') {
     const id = gameId;
-    def.hp = Math.max(0, def.hp - att.dmg);
+    const ev = Combat.hit(att, def, typesGrid(), kind);
     const from = att.el.querySelector('.m-sprite-wrap').getBoundingClientRect();
     const to = def.el.querySelector('.m-sprite-wrap').getBoundingClientRect();
     const x1 = from.left + from.width / 2, y1 = from.top + from.height / 2;
     const x2 = to.left + to.width / 2, y2 = to.top + to.height / 2;
     const orb = document.createElement('div');
-    orb.className = 'strike-orb';
+    orb.className = 'strike-orb' + (kind === 'ram' ? ' ram' : kind === 'duel' ? ' duel' : '');
     orb.style.setProperty('--pc', att.hero.color);
     document.body.append(orb);
     restartClass(att.el, 'lunge');
     Sound.play('strike');
-    const dur = 420 / speed;
     await orb.animate([
       { transform: `translate(${x1}px, ${y1}px) scale(0.3)`, opacity: 0 },
       { transform: `translate(${(x1 + x2) / 2}px, ${Math.min(y1, y2) - 60}px) scale(1)`, opacity: 1, offset: 0.5 },
       { transform: `translate(${x2}px, ${y2}px) scale(1.4)`, opacity: 1 },
-    ], { duration: dur, easing: 'cubic-bezier(.4,0,.9,.5)' }).finished;
+    ], { duration: 420 / speed, easing: 'cubic-bezier(.4,0,.9,.5)' }).finished;
     orb.remove();
     if (id !== gameId) return false;
 
-    restartClass(def.el, 'hit');
-    const pop = document.createElement('b');
-    pop.className = 'dmg-pop';
-    pop.textContent = '−' + att.dmg;
-    pop.addEventListener('animationend', () => pop.remove(), { once: true });
-    def.el.append(pop);
-    renderHp(def);
-    if (def.hp <= 0) {
-      def.el.classList.add('ko');
-      Sound.play('ko');
-      banner('НОКАУТ!', att.hero.color);
+    const tag = kind === 'ram' ? ' (таран)' : kind === 'duel' ? ' (дуэль)' : '';
+    if (ev.dodged) {
+      cardPop(def, 'Даже не моргнул!', 'info');
+      Sound.play('dodge');
+      log(`😐 <b>${def.hero.name}</b> даже не моргнул — удар${tag} ${att.hero.name} проигнорирован`, def.hero.color);
     } else {
-      Sound.play('hit');
+      restartClass(def.el, 'hit');
+      cardPop(def, (ev.crit ? 'КРИТ! ' : '') + '−' + ev.dmg, ev.crit ? 'dmg crit' : 'dmg');
+      renderHp(def);
+      if (ev.ko) showKO(def, att); else Sound.play(ev.crit ? 'crit' : 'hit');
+      log(`⚔ <b>${att.hero.name}</b> бьёт${tag} на ${ev.dmg}${ev.crit ? ' — КРИТ!' : ''} — у соперника ❤ ${def.hp}`, att.hero.color);
     }
-    log(`⚔ <b>${att.hero.name}</b> бьёт на ${att.dmg} — у соперника ❤ ${def.hp}`, att.hero.color);
+    if (ev.bleedApplied) {
+      cardPop(def, '🩸 Кровотечение!', 'bad', 250);
+      log(`🩸 <b>${def.hero.name}</b> истекает кровью до конца боя`, att.hero.color);
+    }
+    if (ev.drainPct > 0) {
+      cardPop(def, `🔗 −${ev.drainPct}% заряда`, 'info', 250);
+      def.charge.forEach((_, b) => renderCharge(def, b, true));
+    }
+    renderStatus(att);
+    renderStatus(def);
     await sleep(380);
     return id === gameId;
   }
 
-  // Начисляет заряд за очки и проводит все накопленные атаки.
+  // Начисляет заряд на шкалу bar и проводит все накопленные атаки.
   // Порядок: шкала дозаполняется до 100% и вспыхивает → пауза → вылетает удар,
   // и в этот же момент шкала сбрасывается на остаток (излишек переходит на следующий удар).
-  async function chargeAndStrike(p, pts) {
+  async function chargeAndStrike(p, pts, bar = 0) {
     const id = gameId;
-    const def = players[1 - players.indexOf(p)];
-    const bar = p.el.querySelector('.charge');
-    p.charge += pts;
-    renderCharge(p);
-    while (p.charge >= p.cost && def.hp > 0) {
+    const def = other(p);
+    const el = chargeEl(p, bar);
+    p.charge[bar] += pts;
+    renderCharge(p, bar);
+    while (p.charge[bar] >= p.cost && def.hp > 0) {
       await sleep(320); // шкала доезжает до 100%
       if (id !== gameId) return false;
-      restartClass(bar, 'full');
+      restartClass(el, 'full');
       Sound.play('charged');
       await sleep(260); // вспышка, короткая пауза
       if (id !== gameId) return false;
-      p.charge -= p.cost;
-      const hit = strike(p, def);
-      renderCharge(p, true);
-      if (p.charge > 0) carryTag(p, p.charge);
-      if (!(await hit)) return false;
+      p.charge[bar] -= p.cost;
+      renderCharge(p, bar, true);
+      if (p.charge[bar] > 0) carryTag(p, bar, p.charge[bar]);
+      if (!(await strike(p, def))) return false;
     }
     return true;
   }
@@ -913,6 +957,26 @@ const Engine = (() => {
   /* ---------------------------------------------------------
    *  Игровой цикл матча
    * ------------------------------------------------------- */
+  // Линии из 5+ камней: «Таран» Бычары и «Перекус» Шаурмена
+  async function onFive(p, count) {
+    for (let k = 0; k < count && !someoneKO(); k++) {
+      const r = Combat.lineOfFive(p, typesGrid());
+      if (!r) return true;
+      if (r.ram) {
+        banner('Таран!', p.hero.color);
+        if (!(await strike(p, other(p), 'ram'))) return false;
+      } else {
+        banner('Перекус!', p.hero.color);
+        Sound.play('heal');
+        cardPop(p, r.heal > 0 ? `+${r.heal} ❤` : '🌯 +1 стак', 'heal');
+        if (r.heal > 0) log(`🌯 <b>${p.hero.name}</b> перекусил: +${r.heal} ❤, стаков ${r.snack}`, p.hero.color);
+        renderHp(p);
+        renderStatus(p);
+      }
+    }
+    return true;
+  }
+
   async function resolveBoard(p) {
     const id = gameId;
     let combo = 0, total = 0;
@@ -921,6 +985,7 @@ const Engine = (() => {
       if (!groups.length) break;
       combo++;
       const pts = scoreGroups(groups, combo);
+      const five = groups.filter((gr) => gr.len >= 5).length;
       total += pts;
       p.score += pts;
       p.maxCombo = Math.max(p.maxCombo, combo);
@@ -931,26 +996,46 @@ const Engine = (() => {
       floatText(sx / set.size, sy / set.size, '+' + pts, combo > 1 ? '#fff38a' : '#ffffff', combo > 1);
       Sound.play('clear', { combo, size: Math.max(...groups.map((g) => g.len)) });
       if (combo >= 2) { banner(`Комбо ×${combo}!`, p.hero.color); Sound.play('combo', { combo }); }
-      else if (groups.some((g) => g.len >= 5)) banner('Потрясающе!', p.hero.color);
+      else if (five) banner('Потрясающе!', p.hero.color);
       else if (groups.some((g) => g.len === 4)) banner('Отлично!', p.hero.color);
 
       // заряд начисляется в момент сжигания, параллельно с исчезновением и падением камней
-      const charging = chargeAndStrike(p, pts);
+      const targets = Combat.chargeTargets(p, combo, pts, scoreGroups(groups, Math.min(combo, 2)));
+      const charging = Promise.all(targets.map((t) => chargeAndStrike(p, t.pts, t.bar)));
       await animateClear(set);
       await animateGravity();
-      if (!(await charging) || id !== gameId) return null;
+      if ((await charging).includes(false) || id !== gameId) return null;
+      if (someoneKO()) break;
+      if (five && !(await onFive(p, five))) return null;
       if (someoneKO()) break;
     }
     return { combo, total };
   }
 
   async function runMatch(id) {
+    let duelAnnounced = false;
     for (;;) {
       if (id !== gameId) return;
       if (someoneKO() || players.every((p) => p.moves >= MOVE_CAP)) { await finish(id); return; }
 
       const p = players[turn];
+      const def = other(p);
       updateUI();
+
+      // начало хода: кровотечение (один раз за ход — после перемешивания поля ход не начинается заново)
+      const st = p.startedAt === p.moves ? null : Combat.startTurn(p, typesGrid());
+      p.startedAt = p.moves;
+      if (st && st.bleed > 0) {
+        restartClass(p.el, 'hit');
+        cardPop(p, `🩸 −${st.bleed}`, 'bad');
+        renderHp(p);
+        Sound.play('hit');
+        log(`🩸 <b>${p.hero.name}</b> теряет ${st.bleed} от кровотечения — ❤ ${p.hp}`, def.hero.color);
+        if (st.ko) { showKO(p, def); continue; }
+        await sleep(450);
+        if (id !== gameId) return;
+      }
+
       const isHuman = !!p.hero.isPlayer;
       let move;
       if (isHuman) {
@@ -994,8 +1079,19 @@ const Engine = (() => {
       const coord = (r, c) => `${String.fromCharCode(65 + c)}${ROWS - r}`;
       log(`<b>${p.hero.name}</b>: ${coord(move.r1, move.c1)} ⇄ ${coord(move.r2, move.c2)} — +${res.total}` +
           (res.combo > 1 ? ` (комбо ×${res.combo})` : ''), p.hero.color);
-
       if (someoneKO()) continue;
+
+      // «Дуэль на закате»: дополнительный удар в последние ходы
+      if (Combat.duelTurn(players, p, MOVE_CAP)) {
+        if (!duelAnnounced) { duelAnnounced = true; banner('Дуэль на закате!', HERO_BY_ID.dumpling.color); Sound.play('duel'); await sleep(700); }
+        if (!(await strike(p, def, 'duel'))) return;
+        if (someoneKO()) continue;
+      }
+
+      // конец хода: «Прицеливание»
+      const en = Combat.endTurn(p);
+      if (en) { cardPop(p, `🎯 Прицеливание ×${en.aim}`, 'good'); renderStatus(p); }
+
       if (!listMoves(typesGrid()).length) {
         banner('Нет ходов — перемешиваем!', '#a347ff');
         await animateShuffle();
@@ -1033,7 +1129,44 @@ const Engine = (() => {
     });
   }
 
-  // Мгновенно доигрывает матч без анимаций (та же логика и те же ИИ)
+  // Доигрывает матч без анимаций по тем же правилам (ИИ, бой, пассивки).
+  // Работает только с состоянием бойцов и сеткой — используется «Досчитать матч» и симуляцией баланса.
+  function fastForward(ps, g, turnIdx) {
+    let t = turnIdx;
+    const duel = (p) => Combat.duelTurn(ps, p, MOVE_CAP);
+    const ko = () => ps.some((p) => p.hp <= 0);
+    let guard = 0;
+    while (!ko() && ps.some((p) => p.moves < MOVE_CAP) && guard++ < 1000) {
+      const p = ps[t], def = ps[1 - t];
+      if (p.startedAt !== p.moves) { p.startedAt = p.moves; Combat.startTurn(p, g); }
+      if (ko()) break;
+      const move = BRAINS[p.hero.model](g);
+      if (!move) { g = randomGrid(); continue; }
+      const s = simulate(g, move, true, true);
+      p.moves++;
+      p.score += s.score;
+      p.maxCombo = Math.max(p.maxCombo, s.combo);
+      g = s.grid;
+      for (const step of s.steps) {
+        for (const tg of Combat.chargeTargets(p, step.combo, step.pts, step.ptsCap)) {
+          p.charge[tg.bar] += tg.pts;
+          while (p.charge[tg.bar] >= p.cost && def.hp > 0) { p.charge[tg.bar] -= p.cost; Combat.hit(p, def, g, 'charge'); }
+        }
+        for (let k = 0; k < step.five && def.hp > 0; k++) {
+          const r = Combat.lineOfFive(p, g);
+          if (r && r.ram) Combat.hit(p, def, g, 'ram');
+        }
+        if (ko()) break;
+      }
+      if (!ko() && duel(p)) Combat.hit(p, def, g, 'duel');
+      Combat.endTurn(p);
+      if (!listMoves(g).length) g = randomGrid();
+      t = 1 - t;
+    }
+    return { grid: g, turn: t };
+  }
+
+  // Мгновенно доигрывает матч без анимаций
   function skip() {
     if (!current || current.done) return;
     if (players.some((p) => p.hero.isPlayer)) return; // свой матч игрок доигрывает сам
@@ -1041,6 +1174,7 @@ const Engine = (() => {
     tweens = [];
     hint = null;
     players.forEach((_, i) => setThinking(i, false));
+    document.querySelectorAll('.strike-orb').forEach((o) => o.remove());
 
     let g = typesGrid();
     fillRandom(g);
@@ -1051,25 +1185,13 @@ const Engine = (() => {
       collapse(g);
       fillRandom(g);
     }
-    let guard = 0;
-    while (!someoneKO() && players.some((p) => p.moves < MOVE_CAP) && guard++ < 1000) {
-      const p = players[turn];
-      const def = players[1 - turn];
-      const move = BRAINS[p.hero.model](g);
-      if (!move) { g = randomGrid(); continue; }
-      const s = simulate(g, move, true);
-      p.score += s.score;
-      p.maxCombo = Math.max(p.maxCombo, s.combo);
-      p.moves++;
-      p.charge += s.score;
-      while (p.charge >= p.cost && def.hp > 0) { p.charge -= p.cost; def.hp = Math.max(0, def.hp - p.dmg); }
-      g = s.grid;
-      if (!listMoves(g).length) g = randomGrid();
-      turn = 1 - turn;
-    }
+    const r = fastForward(players, g, turn);
+    g = r.grid;
+    turn = r.turn;
     players.forEach((p) => {
       renderHp(p);
-      renderCharge(p);
+      p.charge.forEach((_, b) => renderCharge(p, b));
+      renderStatus(p);
       if (p.hp <= 0) p.el.classList.add('ko');
     });
 
@@ -1098,13 +1220,7 @@ const Engine = (() => {
       selected = null;
       dragFrom = null;
       busySwap = false;
-      players = [home, away].map((hero) => {
-        const maxHp = COMBAT.maxHp(hero.stats);
-        return {
-          hero, score: 0, shown: 0, moves: 0, maxCombo: 0,
-          maxHp, hp: maxHp, dmg: COMBAT.damage(hero.stats), cost: COMBAT.attackCost(hero.stats), charge: 0,
-        };
-      });
+      players = [home, away].map((hero) => ({ ...Combat.fighter(hero), shown: 0 }));
       turn = 0; // хозяева ходят первыми
       current = { resolve, done: false };
       resize();
@@ -1236,6 +1352,8 @@ const Engine = (() => {
   }
 
   return {
+    // для симуляции баланса (node): внутренние функции без DOM
+    _sim: { fastForward, randomGrid, MOVE_CAP },
     init,
     play,
     skip,
@@ -1249,7 +1367,7 @@ const Engine = (() => {
     // для автотестов: текущее поле и ждём ли хода игрока
     debug: () => ({
       grid: typesGrid(), waitingHuman: !!human, moves: listMoves(typesGrid()), size, pad, cell,
-      players: players.map((p) => ({ hp: p.hp, maxHp: p.maxHp, charge: p.charge, cost: p.cost, dmg: p.dmg, moves: p.moves })),
+      players: players.map((p) => ({ hp: p.hp, maxHp: p.maxHp, charge: p.charge, cost: p.cost, dmg: p.dmg, moves: p.moves, bleed: p.bleed, aim: p.aim, snack: p.snack })),
     }),
   };
 })();

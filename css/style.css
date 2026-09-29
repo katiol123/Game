@@ -436,6 +436,11 @@ canvas { display: block; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0,
   font-size: 34px; color: #ff4b5c; text-shadow: 0 0 14px rgba(255, 60, 60, 0.8), 0 3px 0 #000; animation: dmgPop 1s ease-out forwards; }
 @keyframes dmgPop { 0% { transform: translate(-50%, 10px) scale(0.4); opacity: 0; } 20% { transform: translate(-50%, 0) scale(1.3); opacity: 1; }
   100% { transform: translate(-50%, -50px) scale(1); opacity: 0; } }
+.dmg-badge { position: absolute; left: -2px; top: -2px; z-index: 2; display: flex; align-items: center; gap: 4px;
+  padding: 3px 9px 3px 7px; border-radius: 10px; font-size: 14px; line-height: 1.2;
+  background: rgba(13, 11, 36, 0.8); border: 1px solid color-mix(in srgb, var(--pc) 55%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--pc) 35%, transparent); }
+.dmg-badge b { font-family: var(--display); font-weight: 400; font-size: 17px; color: #fff; font-variant-numeric: tabular-nums; }
 .strike-orb { position: fixed; left: 0; top: 0; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; z-index: 60; pointer-events: none;
   background: radial-gradient(circle, #fff 0%, var(--pc) 45%, transparent 70%); box-shadow: 0 0 30px 10px var(--pc); }
 

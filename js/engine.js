@@ -762,7 +762,6 @@ const Engine = (() => {
       el.querySelector('.you').hidden = !h.isPlayer;
       el.querySelector('.score').textContent = '0';
       el.querySelector('.dmg').textContent = p.dmg;
-      el.querySelector('.cost').textContent = p.cost;
       el.querySelector('.hp-max').textContent = p.maxHp;
       el.classList.remove('ko', 'hit', 'lunge');
       p.el = el;

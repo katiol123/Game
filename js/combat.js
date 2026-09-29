@@ -13,7 +13,7 @@ const Combat = (() => {
   const DUEL_ENEMY_FACTOR = 0.4; // доля урона соперника Пыли в дополнительных ударах
   const SOFA_BASE_DODGE = 0.1;   // «Невозмутимость»: базовый шанс уворота
   // «Два ствола»: множитель комбо для второй шкалы не выше cap, урон ударов со второй шкалы × dmgFactor
-  const TWO_BARRELS = { cap: 2, dmgFactor: 1 };
+  const TWO_BARRELS = { cap: 2, dmgFactor: 0.5 };
 
   const count = (g, t) => g.reduce((s, row) => s + row.reduce((k, x) => k + (x === t), 0), 0);
   // «количество камней цвета минус 10», не меньше нуля

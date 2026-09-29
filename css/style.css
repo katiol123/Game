@@ -583,6 +583,7 @@ canvas { display: block; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0,
 .xg-lvl { color: var(--muted); font-size: 12px; } .xg-lvl em { font-style: normal; color: #fff; font-weight: 800; }
 .xg-amt { margin-left: auto; font-weight: 900; color: #9ff0ff; white-space: nowrap; }
 .xg-mul { font-size: 11px; font-weight: 900; color: #ffd21f; cursor: help; }
+.xg-mul.down { color: #ff9aa5; }
 .xg-bar { height: 8px; margin-top: 4px; border-radius: 4px; overflow: hidden; background: rgba(255, 255, 255, 0.08); }
 .xg-bar i { display: block; height: 100%; border-radius: 4px; transition: width 0.7s cubic-bezier(.3, .8, .3, 1);
   background: linear-gradient(90deg, #7fe7ff, #2f86ff); box-shadow: 0 0 10px #2f86ff; }

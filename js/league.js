@@ -39,12 +39,12 @@ const League = (() => {
     return e;
   }
 
-  // Множитель опыта за соперника выше по месту и уровню.
-  // placeDiff — на сколько мест соперник выше (0, если не выше), levelDiff — на сколько уровней выше.
+  // Множитель опыта по разнице с соперником.
+  // placeDiff — на сколько мест соперник выше (отрицательное — ниже), levelDiff — на сколько уровней выше.
   function xpMultiplier(placeDiff, levelDiff) {
-    const place = Math.max(0, placeDiff) * XP_PLACE_BONUS;
-    const level = Math.max(0, levelDiff) * XP_LEVEL_BONUS;
-    return { mult: 1 + place + level, place, level };
+    const place = placeDiff * XP_PLACE_BONUS;
+    const level = levelDiff * XP_LEVEL_BONUS;
+    return { mult: Math.max(XP_MIN_MULT, 1 + place + level), place, level };
   }
 
   // Сколько опыта получает сторона ('home' | 'away') за матч; mult — множитель за соперника

@@ -630,12 +630,14 @@ const App = (() => {
   // Строки начисления опыта в окне результата
   function xpRows(xp) {
     const fmt = (v) => String(Math.round(v * 100) / 100).replace('.', ',');
+    const pct = (v) => (v > 0 ? '+' : '−') + Math.abs(Math.round(v * 100)) + '%';
     const mulTag = (mul) => {
-      if (!mul || mul.mult <= 1) return '';
+      if (!mul || Math.abs(mul.mult - 1) < 1e-9) return '';
       const parts = [];
-      if (mul.place) parts.push(`место +${Math.round(mul.place * 100)}%`);
-      if (mul.level) parts.push(`уровень +${Math.round(mul.level * 100)}%`);
-      return ` <small class="xg-mul" title="Соперник выше: ${parts.join(', ')}">×${fmt(mul.mult)}</small>`;
+      if (mul.place) parts.push(`место ${pct(mul.place)}`);
+      if (mul.level) parts.push(`уровень ${pct(mul.level)}`);
+      if (mul.mult <= XP_MIN_MULT && 1 + mul.place + mul.level < XP_MIN_MULT) parts.push('минимум ×0,3');
+      return ` <small class="xg-mul ${mul.mult < 1 ? 'down' : ''}" title="Разница с соперником: ${parts.join(', ')}">×${fmt(mul.mult)}</small>`;
     };
     return `<div class="xp-gain">${xp.map(({ h, g, mul }) => `
       <div class="xg-row ${g.amount ? '' : 'zero'}" style="--hc:${h.color}">

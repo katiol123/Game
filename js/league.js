@@ -39,12 +39,22 @@ const League = (() => {
     return e;
   }
 
-  // Сколько опыта получает сторона ('home' | 'away') за матч
-  function xpGain(res, side) {
+  // Множитель опыта за соперника выше по месту и уровню.
+  // placeDiff — на сколько мест соперник выше (0, если не выше), levelDiff — на сколько уровней выше.
+  function xpMultiplier(placeDiff, levelDiff) {
+    const place = Math.max(0, placeDiff) * XP_PLACE_BONUS;
+    const level = Math.max(0, levelDiff) * XP_LEVEL_BONUS;
+    return { mult: 1 + place + level, place, level };
+  }
+
+  // Сколько опыта получает сторона ('home' | 'away') за матч; mult — множитель за соперника
+  function xpGain(res, side, mult = 1) {
     const o = outcome(res);
-    if (o === 'draw') return XP_REWARD.draw;
-    if (o !== side) return XP_REWARD.loss;
-    return res.crush ? XP_REWARD.crush : XP_REWARD.win;
+    let base;
+    if (o === 'draw') base = XP_REWARD.draw;
+    else if (o !== side) base = XP_REWARD.loss;
+    else base = res.crush ? XP_REWARD.crush : XP_REWARD.win;
+    return Math.round(base * mult);
   }
 
   // Начисляет опыт, повышает уровни (излишек переносится), копит невыбранные улучшения
@@ -165,5 +175,5 @@ const League = (() => {
     try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
   }
 
-  return { createRoster, outcome, xpGain, addXp, rollUpgrades, applyUpgrade, bergerSchedule, create, standings, heroMatches, finished, load, save, clear };
+  return { createRoster, outcome, xpMultiplier, xpGain, addXp, rollUpgrades, applyUpgrade, bergerSchedule, create, standings, heroMatches, finished, load, save, clear };
 })();

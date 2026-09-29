@@ -629,12 +629,20 @@ const App = (() => {
 
   // Строки начисления опыта в окне результата
   function xpRows(xp) {
-    return `<div class="xp-gain">${xp.map(({ h, g }) => `
+    const fmt = (v) => String(Math.round(v * 100) / 100).replace('.', ',');
+    const mulTag = (mul) => {
+      if (!mul || mul.mult <= 1) return '';
+      const parts = [];
+      if (mul.place) parts.push(`место +${Math.round(mul.place * 100)}%`);
+      if (mul.level) parts.push(`уровень +${Math.round(mul.level * 100)}%`);
+      return ` <small class="xg-mul" title="Соперник выше: ${parts.join(', ')}">×${fmt(mul.mult)}</small>`;
+    };
+    return `<div class="xp-gain">${xp.map(({ h, g, mul }) => `
       <div class="xg-row ${g.amount ? '' : 'zero'}" style="--hc:${h.color}">
         ${ava(h)}
         <div class="xg-main">
           <div class="xg-top"><b>${h.name}</b><span class="xg-lvl">Ур. <em>${g.before.level}</em></span>
-            <span class="xg-amt">+${g.amount} опыта</span></div>
+            <span class="xg-amt">+${g.amount} опыта${g.amount ? mulTag(mul) : ''}</span></div>
           <div class="xg-bar"><i style="width:${(g.before.xp / xpToNext(g.before.level)) * 100}%"></i></div>
           <div class="xg-num">${g.before.xp} / ${xpToNext(g.before.level)}</div>
         </div>
@@ -738,9 +746,18 @@ const App = (() => {
       const playing = Engine.play({ home: H, away: A, info });
       await vsOut();
       const res = await playing;
+      // множитель опыта считается по таблице и уровням перед записью результата
+      const st = League.standings(state);
+      const place = (id) => st.findIndex((row) => row.id === id) + 1;
+      const multFor = (me, opp) => League.xpMultiplier(
+        state.round > 0 ? place(me.id) - place(opp.id) : 0, // в первом туре места ещё условные
+        roster[opp.id].level - roster[me.id].level);
       m.result = { home: res.home, away: res.away, winner: res.winner, ko: res.ko, crush: res.crush, hp: res.hp };
       // опыт за бой обоим бойцам
-      const xp = [[H, 'home'], [A, 'away']].map(([h, side]) => ({ h, g: League.addXp(roster[h.id], League.xpGain(m.result, side)) }));
+      const xp = [[H, A, 'home'], [A, H, 'away']].map(([h, opp, side]) => {
+        const mul = multFor(h, opp);
+        return { h, mul, g: League.addXp(roster[h.id], League.xpGain(m.result, side, mul.mult)) };
+      });
       League.save(state);
       await showResult(H, A, res, round.every((x) => x.result), xp);
       await resolveLevelUps([H.id, A.id]);

@@ -373,6 +373,10 @@ const App = (() => {
           tag.className = 'gain-tag';
           tag.textContent = '+' + gained;
           row.querySelector('.pts').append(tag);
+          // одноразовая анимация: убираем после проигрыша, иначе она повторится
+          // при каждом возврате на вкладку (display:none → block перезапускает CSS-анимации)
+          tag.addEventListener('animationend', () => tag.remove(), { once: true });
+          setTimeout(() => row.classList.remove('gain'), 3000);
         }
       });
     }

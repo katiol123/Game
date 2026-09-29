@@ -146,11 +146,10 @@ const PASSIVES = {
   },
   plumber: {
     icon: '🔗', name: T('Наручники', 'Handcuffs'),
-    desc: T('Каждая его атака отнимает у соперника (звёзд на поле − 10) × 6 % накопленного заряда — «задерживает» его атаку.',
-      'Each of his attacks drains (stars on the board − 10) × 6 % of the opponent’s charge, “detaining” their attack.'),
-
-    up: T('Наручники срезают +2% заряда за каждую звезду: (звёзд − 10) × 8 %.',
-      'Handcuffs drain +2% charge per star: (stars − 10) × 8 %.'),
+    desc: T('Каждая его атака отнимает у соперника 20% накопленного заряда + 4% за каждую звезду на поле сверх 10 — «задерживает» его атаку.',
+      'Each of his attacks drains 20% of the opponent’s charge + 4% per star on the board above 10, “detaining” their attack.'),
+    up: T('Наручники срезают 28% заряда + 5% за каждую звезду сверх 10.',
+      'Handcuffs drain 28% charge + 5% per star above 10.'),
   },
   goose: {
     icon: '🔫', name: T('Два ствола', 'Two Barrels'),

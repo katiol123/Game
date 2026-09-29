@@ -16,6 +16,8 @@ const Combat = (() => {
   const TWO_BARRELS = { cap: 2, capUp: 2.5, dmgFactor: 0.5 };
   // «Таран»: на каком шаге каскада срабатывает и какая доля урона (обычная / усиленная)
   const RAM = { combo: 4, dmg: 0.5, dmgUp: 0.65 };
+  // «Наручники»: доля заряда соперника, которую срезает каждая атака Хэртли (+ за каждую звезду сверх 10)
+  const HANDCUFFS = { base: { pct: 20, perStar: 4 }, up: { pct: 28, perStar: 5 } };
 
   const count = (g, t) => g.reduce((s, row) => s + row.reduce((k, x) => k + (x === t), 0), 0);
   // «количество камней цвета минус 10», не меньше нуля
@@ -166,7 +168,8 @@ const Combat = (() => {
 
     // «Наручники»: каждая атака срезает процент накопленного заряда (со всех шкал)
     if (hasPassive(att, 'plumber')) {
-      ev.drainPct = Math.min(100, over10(g, GEM.yellow) * (upPassive(att, 'plumber') ? 8 : 6));
+      const cuffs = upPassive(att, 'plumber') ? HANDCUFFS.up : HANDCUFFS.base;
+      ev.drainPct = Math.min(100, cuffs.pct + over10(g, GEM.yellow) * cuffs.perStar);
       if (ev.drainPct > 0) def.charge = def.charge.map((c) => Math.floor(c * (1 - ev.drainPct / 100)));
     }
 

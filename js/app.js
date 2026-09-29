@@ -116,9 +116,9 @@ const App = (() => {
       </div>`;
     }).join('')}</div>
     <div class="combat">
-      <span title="80 + выносливость × 10">❤ <b>${COMBAT.maxHp(h.stats)}</b> здоровья</span>
-      <span title="⌈13,5 + сила × 1,75⌉">⚔ <b>${COMBAT.damage(h.stats)}</b> урона</span>
-      <span title="1035 − ловкость × 35">⚡ атака за <b>${COMBAT.attackCost(h.stats)}</b> очков</span>
+      <span title="85 + выносливость × 10">❤ <b>${COMBAT.maxHp(h.stats)}</b> здоровья</span>
+      <span title="17 + сила × 2">⚔ <b>${COMBAT.damage(h.stats)}</b> урона</span>
+      <span title="6100 / (8,5 + ловкость)">⚡ атака за <b>${COMBAT.attackCost(h.stats)}</b> очков</span>
     </div>`;
   }
 

@@ -172,7 +172,7 @@ const Engine = (() => {
       const pts = scoreGroups(groups, combo);
       score += pts;
       if (record) {
-        steps.push({ combo, pts, base: scoreGroups(groups, 1), five: groups.filter((gr) => gr.len >= 5).length });
+        steps.push({ combo, pts, base: scoreGroups(groups, 1) });
       }
       cleared += set.size;
       for (const i of set) h[(i / COLS) | 0][i % COLS] = -1;
@@ -837,7 +837,7 @@ const Engine = (() => {
     else if (p.rageReady) chips.push(`<span class="st-chip" title="${UPGRADE_BY_ID.rage.desc}">🔥 ${Math.min(p.score, RAGE_SCORE)} / ${RAGE_SCORE}</span>`);
     if (p.bleed) chips.push(`<span class="st-chip bad" title="${tr('Кровотечение: в начале каждого хода (красных камней − 10) × 4 урона', 'Bleeding: (red gems − 10) × 4 damage at the start of each turn')}">🩸 ${tr('Истекает кровью', 'Bleeding')}</span>`);
     if (p.aim) chips.push(`<span class="st-chip good" title="${tr(`Прицеливание: ${p.aim * 7}% шанс крита ×2`, `Aiming: ${p.aim * 7}% chance of a ×2 crit`)}">🎯 ×${p.aim}</span>`);
-    if (p.snack) chips.push(`<span class="st-chip good" title="${tr(`Перекус: ${p.snack * 3}% шанс крита ×1,75`, `Snack Time: ${p.snack * 3}% chance of a ×1.75 crit`)}">🌯 ×${p.snack}</span>`);
+    if (p.snack) chips.push(`<span class="st-chip good" title="${tr(`Перекус: ${Math.round(p.snack * Combat.SNACK.crit * 100)}% шанс крита ×1,75`, `Snack Time: ${Math.round(p.snack * Combat.SNACK.crit * 100)}% chance of a ×1.75 crit`)}">🌯 ×${p.snack}</span>`);
     p.el.querySelector('.status').innerHTML = chips.join('');
   }
 
@@ -1023,19 +1023,15 @@ const Engine = (() => {
   /* ---------------------------------------------------------
    *  Игровой цикл матча
    * ------------------------------------------------------- */
-  // Линии из 5+ камней: «Перекус» Шаурмена
-  async function onFive(p, count) {
-    for (let k = 0; k < count && !someoneKO(); k++) {
-      const r = Combat.lineOfFive(p, typesGrid());
-      if (!r) return true;
-      banner(tr('Перекус!', 'Snack Time!'), p.hero.color);
-      Sound.play('heal');
-      cardPop(p, r.heal > 0 ? `+${r.heal} ❤` : tr('🌯 +1 стак', '🌯 +1 stack'), 'heal');
-      if (r.heal > 0) log(tr(`🌯 <b>${p.hero.name}</b> перекусил: +${r.heal} ❤, стаков ${r.snack}`, `🌯 <b>${p.hero.name}</b> had a snack: +${r.heal} ❤, stacks ${r.snack}`), p.hero.color);
-      renderHp(p);
-      renderStatus(p);
-    }
-    return true;
+  // «Перекус» Шаурмена: лечение и стак крита
+  function showSnack(p) {
+    const r = Combat.snack(p, typesGrid());
+    banner(tr('Перекус!', 'Snack Time!'), p.hero.color);
+    Sound.play('heal');
+    cardPop(p, r.heal > 0 ? `+${r.heal} ❤` : tr('🌯 +1 стак', '🌯 +1 stack'), 'heal');
+    log(tr(`🌯 <b>${p.hero.name}</b> перекусил: +${r.heal} ❤, стаков ${r.snack}`, `🌯 <b>${p.hero.name}</b> had a snack: +${r.heal} ❤, stacks ${r.snack}`), p.hero.color);
+    renderHp(p);
+    renderStatus(p);
   }
 
   async function resolveBoard(p) {
@@ -1083,8 +1079,8 @@ const Engine = (() => {
         if (!(await strike(p, other(p), 'ram'))) return null;
         if (someoneKO()) break;
       }
-      if (five && !(await onFive(p, five))) return null;
-      if (someoneKO()) break;
+      // «Перекус» Шаурмена: каскад дошёл до комбо ×4
+      if (Combat.snackOnCombo(p, combo)) showSnack(p);
     }
     return { combo, total };
   }
@@ -1259,7 +1255,7 @@ const Engine = (() => {
           while (p.charge[tg.bar] >= p.cost && def.hp > 0) { p.charge[tg.bar] -= p.cost; Combat.hit(p, def, g, tg.bar ? 'charge2' : 'charge'); }
         }
         if (Combat.ramOnCombo(p, step.combo) && def.hp > 0) Combat.hit(p, def, g, 'ram');
-        for (let k = 0; k < step.five && def.hp > 0; k++) Combat.lineOfFive(p, g);
+        if (Combat.snackOnCombo(p, step.combo) && def.hp > 0) Combat.snack(p, g);
         if (ko()) break;
       }
       if (!ko() && duel(p)) Combat.hit(p, def, g, 'duel');

@@ -16,6 +16,8 @@ const Combat = (() => {
   const TWO_BARRELS = { cap: 2, capUp: 2.5, dmgFactor: 0.5 };
   // «Таран»: на каком шаге каскада срабатывает и какая доля урона (обычная / усиленная)
   const RAM = { combo: 4, dmg: 0.5, dmgUp: 0.65 };
+  // «Перекус»: шаг каскада, лечение (база + за каждый зелёный сверх 10; усиленное) и шанс крита за стак
+  const SNACK = { combo: 4, base: { heal: 25, perGreen: 5 }, up: { heal: 32, perGreen: 6 }, crit: 0.15, critMult: 1.75 };
   // «Наручники»: доля заряда соперника, которую срезает каждая атака Хэртли (+ за каждую звезду сверх 10)
   const HANDCUFFS = { base: { pct: 20, perStar: 4 }, up: { pct: 28, perStar: 5 } };
 
@@ -131,7 +133,7 @@ const Combat = (() => {
     // криты: «Хедшот» (×2) и «Перекус» (×1,75)
     let mult = 1;
     if (hasPassive(att, 'granny') && att.aim > 0 && rnd() < Math.min(1, att.aim * (upPassive(att, 'granny') ? 0.09 : 0.07))) { ev.crit = true; mult = 2; }
-    else if (hasPassive(att, 'shawarma') && att.snack > 0 && rnd() < Math.min(1, att.snack * 0.03)) { ev.crit = true; mult = 1.75; }
+    else if (hasPassive(att, 'shawarma') && att.snack > 0 && rnd() < Math.min(1, att.snack * SNACK.crit)) { ev.crit = true; mult = SNACK.critMult; }
 
     // «Невозмутимость»: шанс полностью проигнорировать удар
     const dodgeBase = SOFA_BASE_DODGE + (upPassive(def, 'sofa') ? 0.05 : 0);
@@ -183,15 +185,14 @@ const Combat = (() => {
   // «Таран»: удар без траты заряда, когда каскад доходит до комбо ×RAM.combo (раз за ход)
   const ramOnCombo = (p, combo) => hasPassive(p, 'cat') && combo === RAM.combo;
 
-  // Эффекты линии из 5+ камней: { heal } — «Перекус»
-  function lineOfFive(p, g) {
-    if (hasPassive(p, 'shawarma')) {
-      const heal = Math.max(0, Math.min(p.maxHp - p.hp, over10(g, GEM.green) * (upPassive(p, 'shawarma') ? 6 : 4)));
-      p.hp += heal;
-      p.snack++;
-      return { heal, snack: p.snack };
-    }
-    return null;
+  // «Перекус» Шаурмена: когда каскад доходит до комбо ×SNACK.combo (раз за ход) — лечение и стак крита
+  const snackOnCombo = (p, combo) => hasPassive(p, 'shawarma') && combo === SNACK.combo;
+  function snack(p, g) {
+    const s = upPassive(p, 'shawarma') ? SNACK.up : SNACK.base;
+    const heal = Math.max(0, Math.min(p.maxHp - p.hp, s.heal + over10(g, GEM.green) * s.perGreen));
+    p.hp += heal;
+    p.snack++;
+    return { heal, snack: p.snack };
   }
 
   // «Ярость»: набрав за бой RAGE_SCORE очков, боец получает +30% ко всем характеристикам (не выше 20) до конца боя.
@@ -216,6 +217,6 @@ const Combat = (() => {
 
   return {
     GEM, DUEL_MOVES, TWO_BARRELS, fighter, matchStart, comboMult, chargeTargets, startTurn,
-    duelOn, duelMoves, duelTurn, hit, ramOnCombo, lineOfFive, checkRage, endTurn, count, over10, hasInj, hasPassive, upPassive,
+    duelOn, duelMoves, duelTurn, hit, ramOnCombo, snackOnCombo, snack, checkRage, SNACK, endTurn, count, over10, hasInj, hasPassive, upPassive,
   };
 })();

@@ -764,6 +764,11 @@ const Engine = (() => {
       el.style.setProperty('--pc', h.color);
       el.querySelector('.m-sprite').src = h.sprite;
       el.querySelector('.name').textContent = h.name;
+      // уровень и текущее место в таблице (place передаёт лига; в отдельной игре его может не быть)
+      el.querySelector('.rank').innerHTML = [
+        h.level ? `<span class="rk-lvl">${tr('Ур.', 'Lv.')} <b>${h.level}</b></span>` : '',
+        h.place ? `<span class="rk-place">${I18N.place(h.place)}</span>` : '',
+      ].filter(Boolean).join('<i>·</i>');
       el.querySelector('.side').textContent = i === 0 ? tr('Дома', 'Home') : tr('В гостях', 'Away');
       el.querySelector('.you').hidden = !h.isPlayer;
       el.querySelector('.score').textContent = '0';

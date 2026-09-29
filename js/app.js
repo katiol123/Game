@@ -805,6 +805,8 @@ const App = (() => {
       if (screen !== 'match') show('match');
       $('resultOverlay').classList.remove('show');
       $('skipBtn').hidden = H.isPlayer || A.isPlayer; // свой матч игрок играет сам
+      H.place = placeOf(H.id); // текущее место — для карточек бойцов в матче
+      A.place = placeOf(A.id);
       const playing = Engine.play({ home: H, away: A, info });
       await vsOut();
       const res = await playing;

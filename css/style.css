@@ -502,6 +502,10 @@ canvas { display: block; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0,
 @keyframes bobFlip { 0%, 100% { transform: scaleX(-1); } 50% { transform: scaleX(-1) translateY(-6px) rotate(-2deg); } }
 .side { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); margin-top: 6px; }
 .player .name { font-family: var(--display); font-size: 20px; color: var(--pc); }
+.player .rank { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 2px; font-size: 12px; color: var(--muted); }
+.player .rank i { font-style: normal; opacity: 0.6; }
+.player .rank b { color: var(--text); font-weight: 800; }
+.player .rank .rk-place { color: var(--text); font-weight: 700; }
 .player .you { display: inline-block; font-size: 10px; font-weight: 900; padding: 2px 8px; border-radius: 6px; background: linear-gradient(135deg, #ffd21f, #ff8c1a); color: #2a1600; }
 .player .you[hidden] { display: none; }
 /* ---------- здоровье и заряд атаки ---------- */

@@ -14,15 +14,35 @@ const FACES = {
 };
 
 const HEROES = [
-  { id: 'frog', name: 'Резак', title: 'Два ножа, ноль спокойствия', color: '#5fd35f' },
-  { id: 'granny', name: 'Дед Отмороз', title: 'Подарки с доставкой в голову', color: '#ff5f6d' },
-  { id: 'sofa', name: 'Чэд Чилингтон', title: 'Абсолютный ноль эмоций', color: '#ff9f43' },
-  { id: 'goose', name: 'Кинг-Банг', title: 'Банановые пистолеты заряжены, спелы и абсолютно незаконны', color: '#3fd9ff' },
-  { id: 'plumber', name: 'Офицер Хэртли', title: 'Три в ряд — это уже группа лиц', color: '#5b7cff' },
-  { id: 'dumpling', name: 'Ковбой Пыль', title: 'Самый медленный ствол Дикого Запада', color: '#ff8fd8' },
-  { id: 'cat', name: 'Генерал Бычара', title: 'Прёт напролом', color: '#b06bff' },
-  { id: 'shawarma', name: 'Шаурмен', title: 'Завёрнут и опасен', color: '#ffd93d' },
+  { id: 'frog', name: 'Резак', title: 'Два ножа, ноль спокойствия', color: '#5fd35f',
+    stats: { str: 6, agi: 16, end: 10 } },
+  { id: 'granny', name: 'Дед Отмороз', title: 'Подарки с доставкой в голову', color: '#ff5f6d',
+    stats: { str: 15, agi: 5, end: 8 } },
+  { id: 'sofa', name: 'Чэд Чилингтон', title: 'Абсолютный ноль эмоций', color: '#ff9f43',
+    stats: { str: 6, agi: 13, end: 6 } },
+  { id: 'goose', name: 'Кинг-Банг', title: 'Банановые пистолеты заряжены, спелы и абсолютно незаконны', color: '#3fd9ff',
+    stats: { str: 9, agi: 12, end: 12 } },
+  { id: 'plumber', name: 'Офицер Хэртли', title: 'Три в ряд — это уже группа лиц', color: '#5b7cff',
+    stats: { str: 12, agi: 6, end: 16 } },
+  { id: 'dumpling', name: 'Ковбой Пыль', title: 'Самый медленный ствол Дикого Запада', color: '#ff8fd8',
+    stats: { str: 12, agi: 1, end: 12 } },
+  { id: 'cat', name: 'Генерал Бычара', title: 'Прёт напролом', color: '#b06bff',
+    stats: { str: 15, agi: 5, end: 16 } },
+  { id: 'shawarma', name: 'Шаурмен', title: 'Завёрнут и опасен', color: '#ffd93d',
+    stats: { str: 11, agi: 12, end: 7 } },
 ].map((h) => ({ sprite: `assets/heroes/${h.id}.png`, face: { size: 500, ...FACES[h.id] }, ...h }));
+
+/*
+ * Боевые формулы
+ *   здоровье      = 80 + выносливость × 10
+ *   урон за атаку = ⌈13,5 + сила × 1,75⌉
+ *   цена атаки    = 1035 − ловкость × 35 (столько очков за камни нужно набрать для одного удара)
+ */
+const COMBAT = {
+  maxHp: (s) => 80 + s.end * 10,
+  damage: (s) => Math.ceil(13.5 + s.str * 1.75),
+  attackCost: (s) => 1035 - s.agi * 35,
+};
 
 const HERO_BY_ID = Object.fromEntries(HEROES.map((h) => [h.id, h]));
 

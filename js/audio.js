@@ -213,6 +213,22 @@ const Sound = (() => {
       tone(note(79), 0.2, { type: 'square', vol: 0.08 });
       tone(note(84), 0.5, { type: 'square', vol: 0.08, delay: 0.15 });
     },
+
+    // --- бой ---
+    strike() {
+      noise(0.3, { vol: 0.2, from: 500, to: 4000, q: 1.5 });
+      tone(300, 0.3, { type: 'sawtooth', vol: 0.06, slide: 900 });
+    },
+    hit() {
+      tone(150, 0.25, { type: 'sine', vol: 0.45, slide: 55 });
+      noise(0.14, { vol: 0.3, from: 3000, to: 600, type: 'lowpass' });
+      tone(95, 0.12, { type: 'square', vol: 0.07 });
+    },
+    ko() {
+      tone(120, 0.9, { type: 'sine', vol: 0.55, slide: 30 });
+      noise(0.8, { vol: 0.35, from: 4000, to: 150, type: 'lowpass' });
+      [0, 0.18, 0.36].forEach((d) => tone(note(76), 0.5, { type: 'triangle', vol: 0.14, delay: 0.3 + d }));
+    },
   };
 
   // Минимальный интервал между повторами одного звука (мс)

@@ -17,17 +17,21 @@ const League = (() => {
     return b;
   }
 
-  // Случайные характеристики 1..20 и случайная (но сбалансированная) раздача моделей ИИ
+  // Характеристики героев фиксированы (data.js); модели ИИ раздаются случайно, но сбалансированно
   function createRoster() {
     const models = shuffle(['greedy', 'greedy', 'greedy', 'strategist', 'strategist', 'strategist', 'mystic', 'mystic']);
     const roster = {};
     HEROES.forEach((h, i) => {
-      roster[h.id] = {
-        stats: { str: 1 + rnd(20), agi: 1 + rnd(20), end: 1 + rnd(20) },
-        model: models[i % models.length],
-      };
+      roster[h.id] = { model: models[i % models.length] };
     });
     return roster;
+  }
+
+  // Исход матча: 'home' | 'away' | 'draw'. Старые сохранения без winner — по очкам.
+  function outcome(res) {
+    if (res.winner) return res.winner;
+    if (res.winner === null) return 'draw';
+    return res.home > res.away ? 'home' : res.home < res.away ? 'away' : 'draw';
   }
 
   /*
@@ -82,8 +86,9 @@ const League = (() => {
         const hs = m.result.home, as = m.result.away;
         H.p++; A.p++;
         H.gf += hs; H.ga += as; A.gf += as; A.ga += hs;
-        if (hs > as) { H.w++; A.l++; H.pts += 3; H.form.push('w'); A.form.push('l'); }
-        else if (hs < as) { A.w++; H.l++; A.pts += 3; A.form.push('w'); H.form.push('l'); }
+        const o = outcome(m.result);
+        if (o === 'home') { H.w++; A.l++; H.pts += 3; H.form.push('w'); A.form.push('l'); }
+        else if (o === 'away') { A.w++; H.l++; A.pts += 3; A.form.push('w'); H.form.push('l'); }
         else { H.d++; A.d++; H.pts++; A.pts++; H.form.push('d'); A.form.push('d'); }
       }
     }
@@ -116,5 +121,5 @@ const League = (() => {
     try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
   }
 
-  return { createRoster, bergerSchedule, create, standings, heroMatches, finished, load, save, clear };
+  return { createRoster, outcome, bergerSchedule, create, standings, heroMatches, finished, load, save, clear };
 })();

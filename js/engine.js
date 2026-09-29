@@ -9,6 +9,8 @@ const Engine = (() => {
   const ROWS = 8;
   const COLS = 8;
   const TYPES = 6;
+  // Ходов у каждого бойца за матч. Нет нокаута к концу — ничья.
+  const MOVE_CAP = 15;
 
   // [светлый, основной, тёмный]
   const GEM_COLORS = [
@@ -759,7 +761,13 @@ const Engine = (() => {
       el.querySelector('.side').textContent = i === 0 ? 'Дома' : 'В гостях';
       el.querySelector('.you').hidden = !h.isPlayer;
       el.querySelector('.score').textContent = '0';
+      el.querySelector('.dmg').textContent = p.dmg;
+      el.querySelector('.cost').textContent = p.cost;
+      el.querySelector('.hp-max').textContent = p.maxHp;
+      el.classList.remove('ko', 'hit', 'lunge');
       p.el = el;
+      renderHp(p, true);
+      renderCharge(p);
     });
     $('matchInfo').textContent = info || '';
     $('log').innerHTML = '';
@@ -768,10 +776,91 @@ const Engine = (() => {
   function updateUI() {
     players.forEach((p, i) => {
       p.el.classList.toggle('active', i === turn && !(current && current.done));
-      p.el.querySelector('.moves').textContent = p.movesLeft;
+      p.el.querySelector('.moves').textContent = MOVE_CAP - p.moves;
       p.el.querySelector('.combo').textContent = p.maxCombo;
     });
   }
+
+  // Шкала здоровья: основная полоса + «след» урона, который догоняет с задержкой
+  function renderHp(p, instant = false) {
+    const box = p.el.querySelector('.hp');
+    const pct = Math.max(0, p.hp) / p.maxHp;
+    const fill = box.querySelector('.hp-fill'), ghost = box.querySelector('.hp-ghost');
+    if (instant) { fill.style.transition = ghost.style.transition = 'none'; }
+    fill.style.width = ghost.style.width = '';
+    fill.style.width = pct * 100 + '%';
+    ghost.style.width = pct * 100 + '%';
+    box.style.setProperty('--hpc', `hsl(${Math.round(120 * pct)}, 85%, 52%)`);
+    box.classList.toggle('low', pct > 0 && pct <= 0.25);
+    box.querySelector('.hp-val').textContent = Math.max(0, p.hp);
+    if (instant) { void box.offsetWidth; fill.style.transition = ghost.style.transition = ''; }
+  }
+
+  // Шкала заряда атаки: сколько очков накоплено до следующего удара
+  function renderCharge(p) {
+    const el = p.el.querySelector('.charge');
+    el.querySelector('.charge-fill').style.width = Math.min(1, p.charge / p.cost) * 100 + '%';
+    el.querySelector('.charge-txt').textContent = `${Math.min(p.charge, p.cost)} / ${p.cost}`;
+  }
+
+  const restartClass = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+
+  // Удар: снаряд летит от атакующего к защитнику, у того трясётся карточка и падает здоровье
+  async function strike(att, def) {
+    const id = gameId;
+    def.hp = Math.max(0, def.hp - att.dmg);
+    const from = att.el.querySelector('.m-sprite-wrap').getBoundingClientRect();
+    const to = def.el.querySelector('.m-sprite-wrap').getBoundingClientRect();
+    const x1 = from.left + from.width / 2, y1 = from.top + from.height / 2;
+    const x2 = to.left + to.width / 2, y2 = to.top + to.height / 2;
+    const orb = document.createElement('div');
+    orb.className = 'strike-orb';
+    orb.style.setProperty('--pc', att.hero.color);
+    document.body.append(orb);
+    restartClass(att.el, 'lunge');
+    Sound.play('strike');
+    const dur = 420 / speed;
+    await orb.animate([
+      { transform: `translate(${x1}px, ${y1}px) scale(0.3)`, opacity: 0 },
+      { transform: `translate(${(x1 + x2) / 2}px, ${Math.min(y1, y2) - 60}px) scale(1)`, opacity: 1, offset: 0.5 },
+      { transform: `translate(${x2}px, ${y2}px) scale(1.4)`, opacity: 1 },
+    ], { duration: dur, easing: 'cubic-bezier(.4,0,.9,.5)' }).finished;
+    orb.remove();
+    if (id !== gameId) return false;
+
+    restartClass(def.el, 'hit');
+    const pop = document.createElement('b');
+    pop.className = 'dmg-pop';
+    pop.textContent = '−' + att.dmg;
+    pop.addEventListener('animationend', () => pop.remove(), { once: true });
+    def.el.append(pop);
+    renderHp(def);
+    if (def.hp <= 0) {
+      def.el.classList.add('ko');
+      Sound.play('ko');
+      banner('НОКАУТ!', att.hero.color);
+    } else {
+      Sound.play('hit');
+    }
+    log(`⚔ <b>${att.hero.name}</b> бьёт на ${att.dmg} — у соперника ❤ ${def.hp}`, att.hero.color);
+    await sleep(380);
+    return id === gameId;
+  }
+
+  // Начисляет заряд за очки и проводит все накопленные атаки
+  async function chargeAndStrike(p, pts) {
+    const def = players[1 - players.indexOf(p)];
+    p.charge += pts;
+    renderCharge(p);
+    while (p.charge >= p.cost && def.hp > 0) {
+      p.charge -= p.cost;
+      renderCharge(p);
+      if (!(await strike(p, def))) return false;
+    }
+    return true;
+  }
+
+  const someoneKO = () => players.some((p) => p.hp <= 0);
 
   function setThinking(i, on) {
     players[i].el.querySelector('.thinking').classList.toggle('on', on);
@@ -798,6 +887,7 @@ const Engine = (() => {
    *  Игровой цикл матча
    * ------------------------------------------------------- */
   async function resolveBoard(p) {
+    const id = gameId;
     let combo = 0, total = 0;
     for (;;) {
       const { groups, set } = findMatches(typesGrid());
@@ -819,6 +909,8 @@ const Engine = (() => {
 
       await animateClear(set);
       await animateGravity();
+      if (!(await chargeAndStrike(p, pts)) || id !== gameId) return null;
+      if (someoneKO()) break;
     }
     return { combo, total };
   }
@@ -826,10 +918,9 @@ const Engine = (() => {
   async function runMatch(id) {
     for (;;) {
       if (id !== gameId) return;
-      if (players.every((p) => p.movesLeft === 0)) { await finish(id); return; }
+      if (someoneKO() || players.every((p) => p.moves >= MOVE_CAP)) { await finish(id); return; }
 
       const p = players[turn];
-      if (p.movesLeft === 0) { turn = 1 - turn; continue; }
       updateUI();
       const isHuman = !!p.hero.isPlayer;
       let move;
@@ -857,8 +948,7 @@ const Engine = (() => {
       }
 
       // ход засчитывается сразу — важно для мгновенного досчёта
-      p.movesLeft--;
-      const mover = turn;
+      p.moves++;
       turn = 1 - turn;
 
       if (!isHuman) {
@@ -869,13 +959,14 @@ const Engine = (() => {
 
       await animateSwap(move);
       const res = await resolveBoard(p);
+      if (!res || id !== gameId) return;
       if (res.combo === 0) await animateSwap(move);
 
       const coord = (r, c) => `${String.fromCharCode(65 + c)}${ROWS - r}`;
       log(`<b>${p.hero.name}</b>: ${coord(move.r1, move.c1)} ⇄ ${coord(move.r2, move.c2)} — +${res.total}` +
           (res.combo > 1 ? ` (комбо ×${res.combo})` : ''), p.hero.color);
-      players[mover].el.querySelector('.moves').textContent = p.movesLeft;
 
+      if (someoneKO()) continue;
       if (!listMoves(typesGrid()).length) {
         banner('Нет ходов — перемешиваем!', '#a347ff');
         await animateShuffle();
@@ -887,18 +978,30 @@ const Engine = (() => {
     current.done = true;
     updateUI();
     const [a, b] = players;
-    const w = a.score === b.score ? null : a.score > b.score ? a : b;
+    // победа только нокаутом; ходы кончились без нокаута — ничья
+    const ko = a.hp <= 0 || b.hp <= 0;
+    const w = ko ? (a.hp > 0 ? a : b) : null;
     for (let i = 0; i < 24; i++) {
       const gx = rand(COLS), gy = rand(ROWS);
       if (board[gy] && board[gy][gx]) burst(board[gy][gx]);
     }
+    await sleep(ko ? 700 : 0);
+    if (id !== gameId) return;
     banner(w ? `Победа: ${w.hero.name}!` : 'Ничья!', w ? w.hero.color : '#ffd21f');
     Sound.play('matchEnd');
     await sleep(1400);
     if (id !== gameId) return;
     const cur = current;
     current = null;
-    cur.resolve({ home: a.score, away: b.score, combo: [a.maxCombo, b.maxCombo] });
+    cur.resolve({
+      home: a.score, away: b.score,
+      winner: w === a ? 'home' : w === b ? 'away' : null,
+      ko,
+      hp: [Math.max(0, a.hp), Math.max(0, b.hp)],
+      maxHp: [a.maxHp, b.maxHp],
+      moves: [a.moves, b.moves],
+      combo: [a.maxCombo, b.maxCombo],
+    });
   }
 
   // Мгновенно доигрывает матч без анимаций (та же логика и те же ИИ)
@@ -920,19 +1023,26 @@ const Engine = (() => {
       fillRandom(g);
     }
     let guard = 0;
-    while (players.some((p) => p.movesLeft > 0) && guard++ < 500) {
+    while (!someoneKO() && players.some((p) => p.moves < MOVE_CAP) && guard++ < 1000) {
       const p = players[turn];
-      if (p.movesLeft === 0) { turn = 1 - turn; continue; }
+      const def = players[1 - turn];
       const move = BRAINS[p.hero.model](g);
       if (!move) { g = randomGrid(); continue; }
       const s = simulate(g, move, true);
       p.score += s.score;
       p.maxCombo = Math.max(p.maxCombo, s.combo);
-      p.movesLeft--;
+      p.moves++;
+      p.charge += s.score;
+      while (p.charge >= p.cost && def.hp > 0) { p.charge -= p.cost; def.hp = Math.max(0, def.hp - p.dmg); }
       g = s.grid;
       if (!listMoves(g).length) g = randomGrid();
       turn = 1 - turn;
     }
+    players.forEach((p) => {
+      renderHp(p);
+      renderCharge(p);
+      if (p.hp <= 0) p.el.classList.add('ko');
+    });
 
     // перерисовываем поле итоговым состоянием с короткой вспышкой
     gems.clear();
@@ -946,7 +1056,7 @@ const Engine = (() => {
     finish(id);
   }
 
-  function play({ home, away, moves = 15, info = '' }) {
+  function play({ home, away, info = '' }) {
     return new Promise((resolve) => {
       const id = ++gameId;
       tweens = [];
@@ -959,7 +1069,13 @@ const Engine = (() => {
       selected = null;
       dragFrom = null;
       busySwap = false;
-      players = [home, away].map((hero) => ({ hero, score: 0, shown: 0, movesLeft: moves, maxCombo: 0 }));
+      players = [home, away].map((hero) => {
+        const maxHp = COMBAT.maxHp(hero.stats);
+        return {
+          hero, score: 0, shown: 0, moves: 0, maxCombo: 0,
+          maxHp, hp: maxHp, dmg: COMBAT.damage(hero.stats), cost: COMBAT.attackCost(hero.stats), charge: 0,
+        };
+      });
       turn = 0; // хозяева ходят первыми
       current = { resolve, done: false };
       resize();
@@ -1102,6 +1218,9 @@ const Engine = (() => {
     isPaused: () => paused,
     isPlaying: () => !!current,
     // для автотестов: текущее поле и ждём ли хода игрока
-    debug: () => ({ grid: typesGrid(), waitingHuman: !!human, moves: listMoves(typesGrid()), size, pad, cell }),
+    debug: () => ({
+      grid: typesGrid(), waitingHuman: !!human, moves: listMoves(typesGrid()), size, pad, cell,
+      players: players.map((p) => ({ hp: p.hp, maxHp: p.maxHp, charge: p.charge, cost: p.cost, dmg: p.dmg, moves: p.moves })),
+    }),
   };
 })();

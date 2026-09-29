@@ -8,7 +8,6 @@
 const App = (() => {
   const $ = (id) => document.getElementById(id);
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-  const MATCH_MOVES = 15;
   const N = HEROES.length;
 
   let state = League.load();
@@ -25,7 +24,9 @@ const App = (() => {
     const h = HERO_BY_ID[id];
     const r = roster[id];
     const m = MODELS[r.model];
-    return { ...h, ...r, modelName: m.name, modelIcon: m.icon, modelDesc: m.desc, isPlayer: !!state && state.playerId === id };
+    // характеристики всегда берутся из data.js (в старых сохранениях были случайные)
+    return { ...h, ...r, stats: h.stats, modelName: m.name, modelIcon: m.icon, modelDesc: m.desc,
+      isPlayer: !!state && state.playerId === id };
   }
 
   const ava = (h, cls = '') => `<div class="ava ${cls}" style="${avatarStyle(h)}"></div>`;
@@ -113,7 +114,12 @@ const App = (() => {
         <div class="bar"><i style="--v:${animate ? 0 : v / 20}" data-v="${v / 20}"></i></div>
         <b class="st-val" data-v="${v}">${animate ? 0 : v}</b><small>/20</small>
       </div>`;
-    }).join('')}</div>`;
+    }).join('')}</div>
+    <div class="combat">
+      <span title="80 + выносливость × 10">❤ <b>${COMBAT.maxHp(h.stats)}</b> здоровья</span>
+      <span title="⌈13,5 + сила × 1,75⌉">⚔ <b>${COMBAT.damage(h.stats)}</b> урона</span>
+      <span title="1035 − ловкость × 35">⚡ атака за <b>${COMBAT.attackCost(h.stats)}</b> очков</span>
+    </div>`;
   }
 
   function animateBars(root) {
@@ -361,7 +367,7 @@ const App = (() => {
           </div>`;
         }).join('')}
       </div>
-      <p class="legend">3 очка за победу, 1 — за ничью. При равенстве очков выше тот, у кого больше разница камней.</p>`;
+      <p class="legend">3 очка за победу нокаутом, по 1 — за ничью (нокаута не было за 15 ходов). При равенстве очков выше тот, у кого больше разница камней.</p>`;
 
     if (flip) {
       pane.querySelectorAll('.t-row[data-id]').forEach((row, i) => {
@@ -418,18 +424,19 @@ const App = (() => {
   function fixture(m) {
     const H = hero(m.home), A = hero(m.away);
     const res = m.result;
-    const hw = res && res.home > res.away, aw = res && res.away > res.home;
-    const draw = res && res.home === res.away;
+    const o = res ? League.outcome(res) : null;
+    const hw = o === 'home', aw = o === 'away', draw = o === 'draw';
+    const sideCls = (win) => (win ? 'win' : res && !draw ? 'lose' : '');
     return `
       <div class="fixture ${res ? 'done' : ''} ${H.isPlayer || A.isPlayer ? 'mine' : ''}" style="--h1:${H.color};--h2:${A.color}">
-        <div class="fx-side home ${hw ? 'win' : res ? 'lose' : ''}">
+        <div class="fx-side home ${sideCls(hw)}">
           ${ava(H)}<div class="fx-name">${link(H)}<small>дома${H.isPlayer ? ' · вы' : ''}</small></div>
         </div>
         <div class="fx-mid">
-          ${res ? `<div class="fx-score"><b>${res.home}</b><i>:</i><b>${res.away}</b></div><small>${draw ? 'ничья' : 'завершён'}</small>`
+          ${res ? `<div class="fx-score"><b>${res.home}</b><i>:</i><b>${res.away}</b></div><small>${draw ? 'ничья' : res.ko ? 'нокаут' : 'завершён'}</small>`
                 : '<div class="fx-vs">VS</div><small>предстоит</small>'}
         </div>
-        <div class="fx-side away ${aw ? 'win' : res ? 'lose' : ''}">
+        <div class="fx-side away ${sideCls(aw)}">
           <div class="fx-name">${link(A)}<small>в гостях${A.isPlayer ? ' · вы' : ''}</small></div>${ava(A)}
         </div>
       </div>`;
@@ -525,7 +532,8 @@ const App = (() => {
           let badge = '<span class="res-badge f-none">—</span>', score = '<span class="soon">предстоит</span>';
           if (res) {
             const my = home ? res.home : res.away, their = home ? res.away : res.home;
-            const k = my > their ? 'w' : my < their ? 'l' : 'd';
+            const o = League.outcome(res);
+            const k = o === 'draw' ? 'd' : (o === 'home') === home ? 'w' : 'l';
             badge = `<span class="res-badge f-${k}">${FORM[k]}</span>`;
             score = `<b>${my} : ${their}</b>`;
           }
@@ -585,18 +593,20 @@ const App = (() => {
 
   function showResult(H, A, res, last) {
     return new Promise((resolve) => {
-      const w = res.home === res.away ? null : res.home > res.away ? H : A;
+      const o = League.outcome(res);
+      const w = o === 'home' ? H : o === 'away' ? A : null;
       const card = $('resultCard');
       card.style.setProperty('--hc', w ? w.color : '#ffd21f');
       card.innerHTML = `
         <div class="res-sprites">${w ? `<img src="${w.sprite}" alt="" />` : `<img src="${H.sprite}" alt="" /><img src="${A.sprite}" alt="" />`}</div>
-        <div class="kicker hc">${w ? 'Победа' : 'Ничья'}</div>
-        <h2>${w ? w.name : 'Боевая ничья!'}</h2>
+        <div class="kicker hc">${w ? 'Победа нокаутом' : 'Ничья — нокаута не было'}</div>
+        <h2>${w ? w.name : 'Оба устояли!'}</h2>
         <div class="res-score">
           <span style="color:${H.color}">${H.name}</span>
-          <b>${res.home} : ${res.away}</b>
+          <b>❤ ${res.hp[0]} : ${res.hp[1]} ❤</b>
           <span style="color:${A.color}">${A.name}</span>
         </div>
+        <p class="res-sub">Очки за камни: ${res.home} : ${res.away}</p>
         <p class="countdown" id="resCount"></p>
         <button class="cta" id="resNext"><span>${last ? 'К турнирной таблице' : 'Следующий матч'}</span></button>`;
       $('resultOverlay').classList.add('show');
@@ -640,10 +650,10 @@ const App = (() => {
       const info = `Тур ${r + 1} · Матч ${k + 1} из ${round.length}`;
       await vsIn(H, A, info);
       $('skipBtn').hidden = H.isPlayer || A.isPlayer; // свой матч игрок играет сам
-      const playing = Engine.play({ home: H, away: A, moves: MATCH_MOVES, info });
+      const playing = Engine.play({ home: H, away: A, info });
       await vsOut();
       const res = await playing;
-      m.result = { home: res.home, away: res.away };
+      m.result = { home: res.home, away: res.away, winner: res.winner, ko: res.ko, hp: res.hp };
       League.save(state);
       await showResult(H, A, res, round.every((x) => x.result));
     }

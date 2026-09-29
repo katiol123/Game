@@ -222,9 +222,10 @@ const App = (() => {
     step(d);
   }
 
-  function choose(e) {
+  // spectator = true — турнир без своего героя, все матчи ИИ против ИИ
+  function choose(e, spectator = false) {
     guarded(async () => {
-      const h = HEROES[sel];
+      const h = spectator ? { id: null, color: '#8b3dff' } : HEROES[sel];
       Sound.play('select');
       state = League.create(h.id, roster);
       League.save(state);
@@ -251,8 +252,6 @@ const App = (() => {
 
   function renderHeader() {
     const st = League.standings(state);
-    const me = hero(state.playerId);
-    const place = st.findIndex((r) => r.id === me.id) + 1;
     const total = state.schedule.length;
     const done = League.finished(state);
     const half = total / 2;
@@ -264,8 +263,15 @@ const App = (() => {
       $('tourInfo').textContent = `Тур ${state.round + 1} из ${total} · ${state.round < half ? 'первый' : 'второй'} круг`;
     }
 
-    $('meChip').innerHTML = `${ava(me)}<div><small>Ваш герой</small>${link(me)}<span>${place}-е место</span></div>`;
-    $('meChip').style.setProperty('--hc', me.color);
+    if (state.playerId) {
+      const me = hero(state.playerId);
+      const place = st.findIndex((r) => r.id === me.id) + 1;
+      $('meChip').innerHTML = `${ava(me)}<div><small>Ваш герой</small>${link(me)}<span>${place}-е место</span></div>`;
+      $('meChip').style.setProperty('--hc', me.color);
+    } else {
+      $('meChip').innerHTML = '<div class="ava spect">👁</div><div><small>Режим</small><b>Зритель</b><span>ИИ против ИИ</span></div>';
+      $('meChip').style.setProperty('--hc', '#8b3dff');
+    }
 
     const btn = $('playBtn');
     btn.disabled = done;
@@ -633,6 +639,7 @@ const App = (() => {
       const H = hero(m.home), A = hero(m.away);
       const info = `Тур ${r + 1} · Матч ${k + 1} из ${round.length}`;
       await vsIn(H, A, info);
+      $('skipBtn').hidden = H.isPlayer || A.isPlayer; // свой матч игрок играет сам
       const playing = Engine.play({ home: H, away: A, moves: MATCH_MOVES, info });
       await vsOut();
       const res = await playing;
@@ -682,7 +689,8 @@ const App = (() => {
         <div class="kicker hc">Чемпион Лиги Трёх Камней</div>
         <h2>${champ.name}</h2>
         <p>${st[0].pts} очков · ${st[0].w} побед · ${st[0].d} ничьих · ${st[0].l} поражений</p>
-        <p class="my">${champ.isPlayer ? 'Это ваш герой! Поздравляем! 🎉' : `Ваш герой занял ${myPlace}-е место.`}</p>
+        <p class="my">${!state.playerId ? 'Вы наблюдали за турниром как зритель.'
+          : champ.isPlayer ? 'Это ваш герой! Поздравляем! 🎉' : `Ваш герой занял ${myPlace}-е место.`}</p>
         <div class="champ-actions">
           <button class="ghost" data-act="close">К таблице</button>
           <button class="cta" data-act="new"><span>Новый турнир</span></button>
@@ -733,7 +741,8 @@ const App = (() => {
     Engine.init();
     buildCarousel();
 
-    $('chooseBtn').addEventListener('click', choose);
+    $('chooseBtn').addEventListener('click', (e) => choose(e));
+    $('spectateBtn').addEventListener('click', (e) => choose(e, true));
     $('playBtn').addEventListener('click', playRound);
     $('newBtn').addEventListener('click', () => newTournament(false));
     $('heroBack').addEventListener('click', backToLeague);
@@ -744,7 +753,7 @@ const App = (() => {
 
     document.addEventListener('click', (e) => {
       const b = e.target.closest('button');
-      if (b && !b.matches('#chooseBtn, #tabs button, .rs-chip, .nav, #dots button, #playBtn, .audio-ctl button')) Sound.play('click');
+      if (b && !b.matches('#chooseBtn, #spectateBtn, #tabs button, .rs-chip, .nav, #dots button, #playBtn, .audio-ctl button')) Sound.play('click');
     });
     const syncAudioBtns = () => {
       $('musicBtn').classList.toggle('off', !Sound.musicOn());

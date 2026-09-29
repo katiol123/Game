@@ -465,6 +465,21 @@ const Engine = (() => {
     }
   }
 
+  function drawSelected() {
+    if (!selected || !human) return;
+    const pulse = 0.5 + 0.5 * Math.sin(clock / 120);
+    ctx.save();
+    ctx.shadowColor = '#ffffff';
+    ctx.shadowBlur = 10 + pulse * 14;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2.5 + pulse * 1.5;
+    roundRect(ctx, pad + selected.c * cell + 3, pad + selected.r * cell + 3, cell - 6, cell - 6, cell * 0.18);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.fill();
+    ctx.restore();
+  }
+
   function drawHint() {
     if (!hint) return;
     const pulse = 0.5 + 0.5 * Math.sin(clock / 90);
@@ -556,6 +571,7 @@ const Engine = (() => {
     ctx.clearRect(0, 0, size, size);
     drawBoard();
     drawHint();
+    drawSelected();
 
     ctx.save();
     ctx.beginPath();
@@ -815,16 +831,29 @@ const Engine = (() => {
       const p = players[turn];
       if (p.movesLeft === 0) { turn = 1 - turn; continue; }
       updateUI();
-      setThinking(turn, true);
-      await sleep(500);
-      if (id !== gameId) return;
+      const isHuman = !!p.hero.isPlayer;
+      let move;
+      if (isHuman) {
+        if (!listMoves(typesGrid()).length) {
+          banner('Нет ходов — перемешиваем!', '#a347ff');
+          await animateShuffle();
+          continue;
+        }
+        banner('Ваш ход!', p.hero.color);
+        move = await waitHumanMove();
+        if (id !== gameId) return;
+      } else {
+        setThinking(turn, true);
+        await sleep(500);
+        if (id !== gameId) return;
 
-      const move = BRAINS[p.hero.model](typesGrid());
-      setThinking(turn, false);
-      if (!move) {
-        banner('Нет ходов — перемешиваем!', '#a347ff');
-        await animateShuffle();
-        continue;
+        move = BRAINS[p.hero.model](typesGrid());
+        setThinking(turn, false);
+        if (!move) {
+          banner('Нет ходов — перемешиваем!', '#a347ff');
+          await animateShuffle();
+          continue;
+        }
       }
 
       // ход засчитывается сразу — важно для мгновенного досчёта
@@ -832,9 +861,11 @@ const Engine = (() => {
       const mover = turn;
       turn = 1 - turn;
 
-      hint = { ...move, color: p.hero.color };
-      await sleep(450);
-      hint = null;
+      if (!isHuman) {
+        hint = { ...move, color: p.hero.color };
+        await sleep(450);
+        hint = null;
+      }
 
       await animateSwap(move);
       const res = await resolveBoard(p);
@@ -873,6 +904,7 @@ const Engine = (() => {
   // Мгновенно доигрывает матч без анимаций (та же логика и те же ИИ)
   function skip() {
     if (!current || current.done) return;
+    if (players.some((p) => p.hero.isPlayer)) return; // свой матч игрок доигрывает сам
     const id = ++gameId;
     tweens = [];
     hint = null;
@@ -923,6 +955,10 @@ const Engine = (() => {
       hint = null;
       gems.clear();
       board = [];
+      human = null;
+      selected = null;
+      dragFrom = null;
+      busySwap = false;
       players = [home, away].map((hero) => ({ hero, score: 0, shown: 0, movesLeft: moves, maxCombo: 0 }));
       turn = 0; // хозяева ходят первыми
       current = { resolve, done: false };
@@ -941,6 +977,85 @@ const Engine = (() => {
   }
 
   /* ---------------------------------------------------------
+   *  Ход игрока: клик по двум соседним камням или перетаскивание
+   * ------------------------------------------------------- */
+  const HINT_DELAY = 8000;  // через сколько (игровых мс) подсветить возможный ход
+  let human = null;         // { resolve, since } — ждём ход игрока
+  let selected = null;      // { r, c } — выбранный камень
+  let dragFrom = null;      // { r, c, x, y } — начало перетаскивания
+  let busySwap = false;     // идёт анимация неудачного обмена
+
+  function waitHumanMove() {
+    return new Promise((resolve) => {
+      human = { resolve, since: clock };
+      selected = null;
+      canvas.classList.add('your-turn');
+    });
+  }
+
+  function cellAt(e) {
+    const rect = canvas.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * size - pad;
+    const y = ((e.clientY - rect.top) / rect.height) * size - pad;
+    const c = Math.floor(x / cell), r = Math.floor(y / cell);
+    if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return null;
+    return { r, c, x: e.clientX, y: e.clientY };
+  }
+
+  const canAct = () => human && !paused && !busySwap;
+
+  function tryHumanSwap(a, b) {
+    if (!canAct()) return;
+    if (b.r < 0 || b.r >= ROWS || b.c < 0 || b.c >= COLS) return;
+    if (Math.abs(a.r - b.r) + Math.abs(a.c - b.c) !== 1) return;
+    const m = { r1: a.r, c1: a.c, r2: b.r, c2: b.c };
+    selected = null;
+    hint = null;
+    const h = applyMove(typesGrid(), m);
+    if (matchAt(h, m.r1, m.c1) || matchAt(h, m.r2, m.c2)) {
+      const w = human;
+      human = null;
+      canvas.classList.remove('your-turn');
+      w.resolve(m);
+      return;
+    }
+    // обмен без совпадения: камни меняются и возвращаются, ход не тратится
+    busySwap = true;
+    const id = gameId;
+    animateSwap(m)
+      .then(() => { Sound.play('swapBack'); return animateSwap(m); })
+      .then(() => { if (id === gameId) { busySwap = false; if (human) human.since = clock; } });
+  }
+
+  function onPointerDown(e) {
+    if (!canAct()) return;
+    const p = cellAt(e);
+    if (!p) return;
+    e.preventDefault();
+    if (selected && Math.abs(selected.r - p.r) + Math.abs(selected.c - p.c) === 1) {
+      tryHumanSwap(selected, p);
+      dragFrom = null;
+      return;
+    }
+    selected = selected && selected.r === p.r && selected.c === p.c ? null : { r: p.r, c: p.c };
+    dragFrom = p;
+    Sound.play('tick');
+  }
+
+  function onPointerMove(e) {
+    if (!dragFrom || !canAct()) return;
+    const rect = canvas.getBoundingClientRect();
+    const dx = e.clientX - dragFrom.x, dy = e.clientY - dragFrom.y;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < (rect.width / COLS) * 0.35) return;
+    const from = dragFrom;
+    dragFrom = null;
+    const to = Math.abs(dx) > Math.abs(dy)
+      ? { r: from.r, c: from.c + Math.sign(dx) }
+      : { r: from.r + Math.sign(dy), c: from.c };
+    tryHumanSwap(from, to);
+  }
+
+  /* ---------------------------------------------------------
    *  Кадры
    * ------------------------------------------------------- */
   let last = performance.now();
@@ -952,6 +1067,10 @@ const Engine = (() => {
       clock += gdt;
       updateTweens();
       updateParticles(gdt / 1000);
+      if (human && !hint && !busySwap && clock - human.since > HINT_DELAY) {
+        const ms = listMoves(typesGrid());
+        if (ms.length) hint = { ...ms[rand(ms.length)], color: '#ffffff' };
+      }
     }
     if (active) {
       tickScores(dt / 1000);
@@ -963,6 +1082,10 @@ const Engine = (() => {
   function init() {
     canvas = $('board');
     ctx = canvas.getContext('2d');
+    canvas.addEventListener('pointerdown', onPointerDown);
+    canvas.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', () => { dragFrom = null; });
+    window.addEventListener('pointercancel', () => { dragFrom = null; });
     window.addEventListener('resize', resize);
     requestAnimationFrame(frame);
   }
@@ -978,5 +1101,7 @@ const Engine = (() => {
     setPaused(v) { paused = v; },
     isPaused: () => paused,
     isPlaying: () => !!current,
+    // для автотестов: текущее поле и ждём ли хода игрока
+    debug: () => ({ grid: typesGrid(), waitingHuman: !!human, moves: listMoves(typesGrid()), size, pad, cell }),
   };
 })();

@@ -183,7 +183,9 @@ button:disabled { opacity: 0.45; cursor: default; transform: none; }
 .dots button { width: 12px; height: 12px; padding: 0; border-radius: 6px; background: rgba(255, 255, 255, 0.2); border: 0;
   transition: width 0.4s, background 0.4s; }
 .dots button.active { width: 34px; background: var(--hc); box-shadow: 0 0 12px var(--hc); }
-#chooseBtn { margin-bottom: 10px; }
+.sel-actions { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
+#spectateBtn { padding: 13px 22px; border-radius: 16px; font-size: 15px; }
+.ava.spect { display: grid; place-items: center; font-size: 22px; background: rgba(139, 61, 255, 0.25); }
 
 /* =========================================================
  *  ЛИГА
@@ -198,6 +200,7 @@ button:disabled { opacity: 0.45; cursor: default; transform: none; }
   background: color-mix(in srgb, var(--hc) 12%, rgba(255, 255, 255, 0.04)); border: 1px solid color-mix(in srgb, var(--hc) 45%, transparent); }
 .lh-me .ava { width: 46px; height: 46px; }
 .lh-me small { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; }
+.lh-me b { display: block; }
 .lh-me span { display: block; font-size: 12px; color: var(--muted); }
 .lh-actions { display: flex; gap: 10px; align-items: center; }
 .cta.play { padding: 12px 26px; }
@@ -356,6 +359,7 @@ button:disabled { opacity: 0.45; cursor: default; transform: none; }
 .round { display: inline-block; padding: 6px 16px; border-radius: 99px; background: var(--card); border: 1px solid var(--border); font-weight: 700; }
 .match-main { display: flex; align-items: center; justify-content: center; gap: 22px; width: 100%; max-width: 1150px; }
 .board-wrap { position: relative; flex: 0 1 600px; min-width: 0; display: flex; justify-content: center; }
+canvas.your-turn { cursor: pointer; touch-action: none; }
 canvas { display: block; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08); }
 
 .player { --pc: #ff5fa2; width: 220px; flex-shrink: 0; padding: 14px; border-radius: 22px; background: var(--card);

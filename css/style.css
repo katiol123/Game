@@ -435,8 +435,8 @@ canvas { display: block; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0,
 .vs.show { visibility: visible; pointer-events: auto; }
 .vs-side { position: absolute; top: 0; bottom: 0; width: 58%; display: flex; align-items: flex-end; overflow: hidden;
   background: linear-gradient(160deg, color-mix(in srgb, var(--hc) 75%, #000), #0d0b24 85%); }
-.vs-side.left { --off: translateX(-105%); --out: translateX(-110%); left: 0; clip-path: polygon(0 0, 100% 0, 72% 100%, 0 100%); transform: var(--off); }
-.vs-side.right { --off: translateX(105%); --out: translateX(110%); right: 0; clip-path: polygon(28% 0, 100% 0, 100% 100%, 0 100%); transform: var(--off); justify-content: flex-end; }
+.vs-side.left { --off: translateX(-105%); --out: translateX(-110%); left: 0; clip-path: polygon(0 0, 100% 0, 74% 100%, 0 100%); transform: var(--off); }
+.vs-side.right { --off: translateX(105%); --out: translateX(110%); right: 0; clip-path: polygon(26% 0, 100% 0, 100% 100%, 0 100%); transform: var(--off); justify-content: flex-end; }
 .vs-side::before { content: ""; position: absolute; inset: 0; opacity: 0.25;
   background: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.25) 0 2px, transparent 2px 22px); }
 .vs-side img { position: relative; height: 72vh; max-height: 640px; filter: drop-shadow(0 0 30px rgba(0, 0, 0, 0.6)); }

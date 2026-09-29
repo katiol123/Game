@@ -172,7 +172,6 @@ button:disabled { opacity: 0.45; cursor: default; transform: none; }
 .hi-inner { padding: 22px; border-radius: 22px; background: var(--card); border: 1px solid var(--border);
   backdrop-filter: blur(10px); box-shadow: inset 0 0 40px color-mix(in srgb, var(--hc) 12%, transparent); }
 .hi-inner h2 { font-size: 34px; margin: 4px 0 8px; color: #fff; text-shadow: 0 0 24px color-mix(in srgb, var(--hc) 60%, transparent); }
-.hi-desc { color: #cfd3f5; line-height: 1.45; font-size: 15px; }
 .enter-r { animation: enterR 0.55s cubic-bezier(.2, .9, .3, 1); }
 .enter-l { animation: enterL 0.55s cubic-bezier(.2, .9, .3, 1); }
 .enter { animation: enterUp 0.6s cubic-bezier(.2, .9, .3, 1); }
@@ -318,7 +317,6 @@ button:disabled { opacity: 0.45; cursor: default; transform: none; }
 .hp-rank small { font-family: "Rubik", sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); }
 @keyframes stamp { from { opacity: 0; transform: scale(2.2) rotate(-25deg); } }
 .hp-info h1 { font-size: clamp(30px, 4vw, 46px); margin: 4px 0 10px; text-shadow: 0 0 30px color-mix(in srgb, var(--hc) 60%, transparent); }
-.hp-desc { color: #cfd3f5; line-height: 1.5; font-size: 16px; }
 
 .record { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 26px 0 12px; }
 .rec { padding: 14px; border-radius: 16px; background: var(--card); border: 1px solid var(--border); text-align: center; animation: rowIn 0.5s backwards; }

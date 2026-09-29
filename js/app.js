@@ -200,7 +200,6 @@ const App = (() => {
     box.innerHTML = `
       <div class="kicker hc">${h.title}</div>
       <h2 class="glitch" data-text="${h.name}">${h.name}</h2>
-      <p class="hi-desc">${h.desc}</p>
       ${statBars(h, true)}`;
     box.classList.remove('enter-l', 'enter-r', 'enter');
     void box.offsetWidth;
@@ -476,7 +475,6 @@ const App = (() => {
         <div class="hp-info">
           <div class="kicker hc">${h.title}</div>
           <h1 class="glitch" data-text="${h.name}">${h.name}${h.isPlayer ? ' <em class="you-tag">ВЫ</em>' : ''}</h1>
-          <p class="hp-desc">${h.desc}</p>
           ${statBars(h, true)}
           ${modelBadge(h)}
         </div>

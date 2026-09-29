@@ -815,7 +815,7 @@ const App = (() => {
             const cur = c.stat ? h.stats[c.stat] : null;
             return `<button class="up-card" data-i="${i}" style="--i:${i}" ${human ? '' : 'disabled'}>
               <span class="uc-icon">${c.icon}</span><b>${c.name}</b><small>${c.desc}</small>
-              ${cur !== null ? `<em>${cur} → ${cur + 1}</em>` : ''}
+              ${cur !== null ? `<em>${cur} → ${cur + (c.amount || 1)}</em>` : ''}
             </button>`;
           }).join('')}</div>
         </div>`;

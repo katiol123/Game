@@ -59,11 +59,11 @@ const XP_LEVEL_BONUS = 0.1;
 const XP_MIN_MULT = 0.3;
 
 // Карточки улучшений при повышении уровня: из всего набора выпадают 3 разные случайные.
-// stat — какую характеристику улучшает, apply — меняет прокачку героя. ИИ выбирает карточку случайно.
+// stat — какую характеристику улучшает, amount — на сколько, apply — меняет прокачку героя. ИИ выбирает карточку случайно.
 const UPGRADES = [
-  { id: 'str', icon: '💪', name: 'Сила', desc: '+1 к силе', stat: 'str', apply: (prog) => { prog.bonus.str++; } },
-  { id: 'agi', icon: '🤸', name: 'Ловкость', desc: '+1 к ловкости', stat: 'agi', apply: (prog) => { prog.bonus.agi++; } },
-  { id: 'end', icon: '🛡️', name: 'Выносливость', desc: '+1 к выносливости', stat: 'end', apply: (prog) => { prog.bonus.end++; } },
+  { id: 'str', icon: '💪', name: 'Сила', desc: '+2 к силе', stat: 'str', amount: 2, apply: (prog) => { prog.bonus.str += 2; } },
+  { id: 'agi', icon: '🤸', name: 'Ловкость', desc: '+2 к ловкости', stat: 'agi', amount: 2, apply: (prog) => { prog.bonus.agi += 2; } },
+  { id: 'end', icon: '🛡️', name: 'Выносливость', desc: '+2 к выносливости', stat: 'end', amount: 2, apply: (prog) => { prog.bonus.end += 2; } },
 ];
 const UPGRADE_BY_ID = Object.fromEntries(UPGRADES.map((u) => [u.id, u]));
 

@@ -377,7 +377,7 @@ const App = (() => {
           return `
           <div class="t-row ${h.isPlayer ? 'me' : ''} ${zone}" data-id="${r.id}" data-pts="${r.pts}" style="--hc:${h.color};--i:${i}">
             <span class="pos">${i === 0 && anyPlayed ? '👑' : i + 1}</span>
-            <span class="t-who">${ava(h)}<span class="t-name">${link(h)}</span>${h.isPlayer ? `<em class="you-tag">${tr('ВЫ', 'YOU')}</em>` : ''}</span>
+            <span class="t-who"><span class="ava-lvl">${ava(h)}<b title="${tr('Уровень', 'Level')} ${h.level}">${h.level}</b></span><span class="t-name">${link(h)}</span>${h.isPlayer ? `<em class="you-tag">${tr('ВЫ', 'YOU')}</em>` : ''}</span>
             <span>${r.p}</span><span>${r.w}</span><span>${r.d}</span><span>${r.l}</span>
             <span class="c-gd">${r.gf}<i>:</i>${r.ga}</span>
             <span class="pts">${r.pts}</span>

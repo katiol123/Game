@@ -338,6 +338,12 @@ button:disabled { opacity: 0.45; cursor: default; transform: none; }
 .t-row:not(.t-head):hover { background: var(--card-2); border-color: color-mix(in srgb, var(--hc) 40%, transparent); }
 .t-head { background: transparent; color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding-top: 0; padding-bottom: 0; }
 .t-who { display: flex; align-items: center; gap: 10px; text-align: left; min-width: 0; }
+/* уровень бойца: кружок в правом нижнем углу аватарки, наполовину снаружи */
+.ava-lvl { position: relative; flex-shrink: 0; display: flex; }
+.ava-lvl b { position: absolute; right: -7px; bottom: -7px; min-width: 20px; height: 20px; padding: 0 4px; border-radius: 10px;
+  display: grid; place-items: center; font: 400 11px/1 var(--display); color: #fff; cursor: help;
+  background: color-mix(in srgb, var(--hc) 55%, #16123a); border: 2px solid var(--hc);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--hc) 60%, transparent), 0 2px 4px rgba(0, 0, 0, 0.5); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
 .t-name { display: flex; flex-direction: column; min-width: 0; }
 .t-name a { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pos { font-family: var(--display); font-size: 18px; }

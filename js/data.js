@@ -79,7 +79,7 @@ const INJURIES = [
   { id: 'arm', icon: '🦾', name: T('Перелом руки', 'Broken Arm'), desc: T('(3 × красных камней) % шанс промахнуться ударом', '(3 × red gems) % chance to miss a strike') },
   { id: 'leg', icon: '🦵', name: T('Перелом ноги', 'Broken Leg'), desc: T('ловкость −50%', 'Agility −50%') },
   { id: 'concussion', icon: '💫', name: T('Сотрясение мозга', 'Concussion'), desc: T('(2 × красных камней) % шанс пропустить ход, опыт за бой не начисляется', '(2 × red gems) % chance to skip a turn, no XP for the bout') },
-  { id: 'rib', icon: '🩻', name: T('Перелом ребра', 'Broken Rib'), desc: T('пассивка отключена, макс. здоровье −20%', 'passive disabled, max HP −20%') },
+  { id: 'rib', icon: '🦴', name: T('Перелом ребра', 'Broken Rib'), desc: T('пассивка отключена, макс. здоровье −20%', 'passive disabled, max HP −20%') },
   { id: 'nose', icon: '👃', name: T('Сломан нос', 'Broken Nose'), desc: T('множитель комбо на 1 меньше (×2 → ×1, ×3 → ×2…)', 'combo multiplier 1 lower (×2 → ×1, ×3 → ×2…)') },
   { id: 'teeth', icon: '🦷', name: T('Выбитые зубы', 'Knocked-out Teeth'), desc: T('удар — крит, заряд обнулён; в следующих боях соперник начинает с половиной заряда', 'the strike is a crit, charge reset; in later bouts the opponent starts half-charged') },
 ];

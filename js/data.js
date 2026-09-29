@@ -139,11 +139,10 @@ const PASSIVES = {
   },
   cat: {
     icon: '🐂', name: T('Таран', 'Battering Ram'),
-    desc: T('Каждая собранная линия из 5 камней сразу даёт удар, не тратя заряд.',
-      'Every line of 5 gems instantly lands a strike without spending charge.'),
-
-    up: T('Таран наносит 125% урона.',
-      'The ram deals 125% damage.'),
+    desc: T('Когда каскад доходит до комбо ×4, Бычара сразу наносит удар на 50% урона, не тратя заряд.',
+      'When a cascade reaches combo ×4, Bullrush instantly strikes for 50% damage without spending charge.'),
+    up: T('Таран наносит 65% урона.',
+      'The ram deals 65% damage.'),
   },
   plumber: {
     icon: '🔗', name: T('Наручники', 'Handcuffs'),

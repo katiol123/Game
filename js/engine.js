@@ -1023,22 +1023,17 @@ const Engine = (() => {
   /* ---------------------------------------------------------
    *  Игровой цикл матча
    * ------------------------------------------------------- */
-  // Линии из 5+ камней: «Таран» Бычары и «Перекус» Шаурмена
+  // Линии из 5+ камней: «Перекус» Шаурмена
   async function onFive(p, count) {
     for (let k = 0; k < count && !someoneKO(); k++) {
       const r = Combat.lineOfFive(p, typesGrid());
       if (!r) return true;
-      if (r.ram) {
-        banner(tr('Таран!', 'Ram!'), p.hero.color);
-        if (!(await strike(p, other(p), 'ram'))) return false;
-      } else {
-        banner(tr('Перекус!', 'Snack Time!'), p.hero.color);
-        Sound.play('heal');
-        cardPop(p, r.heal > 0 ? `+${r.heal} ❤` : tr('🌯 +1 стак', '🌯 +1 stack'), 'heal');
-        if (r.heal > 0) log(tr(`🌯 <b>${p.hero.name}</b> перекусил: +${r.heal} ❤, стаков ${r.snack}`, `🌯 <b>${p.hero.name}</b> had a snack: +${r.heal} ❤, stacks ${r.snack}`), p.hero.color);
-        renderHp(p);
-        renderStatus(p);
-      }
+      banner(tr('Перекус!', 'Snack Time!'), p.hero.color);
+      Sound.play('heal');
+      cardPop(p, r.heal > 0 ? `+${r.heal} ❤` : tr('🌯 +1 стак', '🌯 +1 stack'), 'heal');
+      if (r.heal > 0) log(tr(`🌯 <b>${p.hero.name}</b> перекусил: +${r.heal} ❤, стаков ${r.snack}`, `🌯 <b>${p.hero.name}</b> had a snack: +${r.heal} ❤, stacks ${r.snack}`), p.hero.color);
+      renderHp(p);
+      renderStatus(p);
     }
     return true;
   }
@@ -1082,6 +1077,12 @@ const Engine = (() => {
       await animateGravity();
       if (!(await charging) || id !== gameId) return null;
       if (someoneKO()) break;
+      // «Таран» Бычары: каскад дошёл до комбо ×4
+      if (Combat.ramOnCombo(p, combo)) {
+        banner(tr('Таран!', 'Ram!'), p.hero.color);
+        if (!(await strike(p, other(p), 'ram'))) return null;
+        if (someoneKO()) break;
+      }
       if (five && !(await onFive(p, five))) return null;
       if (someoneKO()) break;
     }
@@ -1257,10 +1258,8 @@ const Engine = (() => {
           p.charge[tg.bar] += tg.pts;
           while (p.charge[tg.bar] >= p.cost && def.hp > 0) { p.charge[tg.bar] -= p.cost; Combat.hit(p, def, g, tg.bar ? 'charge2' : 'charge'); }
         }
-        for (let k = 0; k < step.five && def.hp > 0; k++) {
-          const r = Combat.lineOfFive(p, g);
-          if (r && r.ram) Combat.hit(p, def, g, 'ram');
-        }
+        if (Combat.ramOnCombo(p, step.combo) && def.hp > 0) Combat.hit(p, def, g, 'ram');
+        for (let k = 0; k < step.five && def.hp > 0; k++) Combat.lineOfFive(p, g);
         if (ko()) break;
       }
       if (!ko() && duel(p)) Combat.hit(p, def, g, 'duel');

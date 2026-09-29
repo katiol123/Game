@@ -14,6 +14,8 @@ const Combat = (() => {
   const SOFA_BASE_DODGE = 0.1;   // «Невозмутимость»: базовый шанс уворота
   // «Два ствола»: множитель комбо для второй шкалы не выше cap, урон ударов со второй шкалы × dmgFactor
   const TWO_BARRELS = { cap: 2, capUp: 2.5, dmgFactor: 0.5 };
+  // «Таран»: на каком шаге каскада срабатывает и какая доля урона (обычная / усиленная)
+  const RAM = { combo: 4, dmg: 0.5, dmgUp: 0.65 };
 
   const count = (g, t) => g.reduce((s, row) => s + row.reduce((k, x) => k + (x === t), 0), 0);
   // «количество камней цвета минус 10», не меньше нуля
@@ -115,7 +117,7 @@ const Combat = (() => {
     let base = att.dmg;
     if (kind === 'duel' && att.id !== 'dumpling') base = Math.ceil(att.dmg * DUEL_ENEMY_FACTOR);
     if (kind === 'charge2') base = Math.ceil(att.dmg * TWO_BARRELS.dmgFactor);
-    if (kind === 'ram' && upPassive(att, 'cat')) base = Math.round(att.dmg * 1.25);
+    if (kind === 'ram') base = Math.round(att.dmg * (upPassive(att, 'cat') ? RAM.dmgUp : RAM.dmg));
     const ev = { kind, base, dmg: 0, crit: false, missed: false, dodged: false, bleedApplied: false, drainPct: 0, aimLost: 0 };
 
     // «Перелом руки»: (3 × красных камней)% шанс промахнуться — удар пропадает целиком
@@ -175,9 +177,11 @@ const Combat = (() => {
     return ev;
   }
 
-  // Эффекты линии из 5+ камней: 'ram' — удар «Тараном», { heal } — «Перекус»
+  // «Таран»: удар без траты заряда, когда каскад доходит до комбо ×RAM.combo (раз за ход)
+  const ramOnCombo = (p, combo) => hasPassive(p, 'cat') && combo === RAM.combo;
+
+  // Эффекты линии из 5+ камней: { heal } — «Перекус»
   function lineOfFive(p, g) {
-    if (hasPassive(p, 'cat')) return { ram: true };
     if (hasPassive(p, 'shawarma')) {
       const heal = Math.max(0, Math.min(p.maxHp - p.hp, over10(g, GEM.green) * (upPassive(p, 'shawarma') ? 6 : 4)));
       p.hp += heal;
@@ -209,6 +213,6 @@ const Combat = (() => {
 
   return {
     GEM, DUEL_MOVES, TWO_BARRELS, fighter, matchStart, comboMult, chargeTargets, startTurn,
-    duelOn, duelMoves, duelTurn, hit, lineOfFive, checkRage, endTurn, count, over10, hasInj, hasPassive, upPassive,
+    duelOn, duelMoves, duelTurn, hit, ramOnCombo, lineOfFive, checkRage, endTurn, count, over10, hasInj, hasPassive, upPassive,
   };
 })();

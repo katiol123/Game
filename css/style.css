@@ -792,6 +792,52 @@ canvas { display: block; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0,
 .champ-card p { color: #cfd3f5; }
 .champ-card .my { margin: 8px 0 16px; font-weight: 700; }
 .champ-actions { display: flex; gap: 10px; justify-content: center; }
+.champ-actions { flex-wrap: wrap; }
+
+/* ---------- межсезонье: предсезонное окно ---------- */
+.preseason { position: absolute; inset: 0; overflow-y: auto; pointer-events: auto; background: rgba(8, 6, 25, 0.86);
+  backdrop-filter: blur(8px); animation: fadeIn 0.5s ease; padding: 28px 16px 40px; }
+.preseason.out { animation: fadeOut 0.45s forwards; }
+.ps-box { max-width: 1180px; margin: 0 auto; text-align: center; }
+.ps-box h2 { font-size: clamp(30px, 5vw, 52px); margin: 4px 0 12px;
+  background: linear-gradient(90deg, #ff5fa2, #ffd21f, #4fd1ff); -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: enterUp 0.6s cubic-bezier(.2, .9, .3, 1.1) both; }
+.ps-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 18px; font-size: 13px; color: var(--muted); margin-bottom: 18px; }
+.ps-legend b { color: var(--text); margin-right: 4px; }
+.ps-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; text-align: left; }
+.ps-card { padding: 12px 12px 10px; border-radius: 18px; background: rgba(255, 255, 255, 0.06);
+  border: 1px solid color-mix(in srgb, var(--hc) 45%, transparent); box-shadow: 0 0 24px color-mix(in srgb, var(--hc) 14%, transparent);
+  animation: psIn 0.6s cubic-bezier(.2, 1.3, .4, 1) calc(0.25s + var(--i) * 0.09s) both; }
+@keyframes psIn { from { opacity: 0; transform: translateY(26px) rotateX(-35deg) scale(0.92); } }
+.ps-head { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; }
+.ps-head .ava { width: 38px; height: 38px; }
+.ps-head > div:not(.ava) { min-width: 0; flex: 1; }
+.ps-head b { display: block; font-size: 14px; color: var(--hc); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ps-head small { font-size: 11px; color: var(--muted); }
+.ps-sum { font-family: var(--display); font-size: 14px; white-space: nowrap; color: var(--muted); }
+.ps-sum.up { color: #3ddc84; } .ps-sum.down { color: #ff6b7d; }
+.ps-stat { display: grid; grid-template-columns: 20px 1fr 58px; grid-template-areas: "n bar val" ". chips chips"; align-items: center; gap: 2px 8px; margin-top: 5px; }
+.ps-name { grid-area: n; font-size: 14px; }
+.ps-bar { grid-area: bar; position: relative; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.ps-bar i { position: absolute; top: 0; bottom: 0; left: 0; background: var(--hc); border-radius: 4px 0 0 4px;
+  animation: grow 0.8s cubic-bezier(.2, .9, .3, 1) calc(0.5s + var(--i) * 0.09s) both; transform-origin: left; }
+.ps-bar i.gain { background: #3ddc84; box-shadow: 0 0 8px #3ddc84; border-radius: 0 4px 4px 0; animation: psGain 1.2s ease calc(1s + var(--i) * 0.09s) both; }
+.ps-bar i.loss { background: repeating-linear-gradient(135deg, rgba(255, 75, 92, 0.85) 0 3px, rgba(255, 75, 92, 0.3) 3px 6px); border-radius: 0 4px 4px 0;
+  animation: psLoss 1.2s ease calc(1s + var(--i) * 0.09s) both; }
+@keyframes psGain { from { opacity: 0; transform: scaleX(0); } }
+@keyframes psLoss { 0% { opacity: 1; background: var(--hc); } 50% { opacity: 1; } }
+.ps-val { grid-area: val; text-align: right; font-family: var(--display); font-size: 14px; color: var(--muted); white-space: nowrap; }
+.ps-val em { font-style: normal; margin: 0 3px; font-size: 11px; }
+.ps-val b { font-weight: 400; color: var(--text); }
+.ps-val b.up { color: #3ddc84; } .ps-val b.down { color: #ff6b7d; }
+.ps-chips { grid-area: chips; display: flex; gap: 4px; flex-wrap: wrap; min-height: 0; }
+.ps-why { font-style: normal; font-size: 10px; font-weight: 800; padding: 0 5px; border-radius: 6px; cursor: help;
+  animation: enterUp 0.4s ease calc(1.2s + var(--i) * 0.09s) both; }
+.ps-why.up { color: #9ff5c2; background: rgba(61, 220, 132, 0.16); }
+.ps-why.down { color: #ffb3bb; background: rgba(255, 75, 92, 0.16); }
+.ps-keep { margin: 16px 0 12px; color: var(--muted); font-size: 13px; }
+@media (max-width: 1000px) { .ps-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .ps-grid { grid-template-columns: minmax(0, 1fr); } }
 .confetti i { position: absolute; top: -20px; left: var(--x); width: 10px; height: 16px; border-radius: 2px;
   animation: fall var(--d) linear var(--dl) infinite; }
 @keyframes fall { to { transform: translateY(110vh) rotate(var(--r)); } }

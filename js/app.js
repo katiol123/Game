@@ -302,10 +302,10 @@ const App = (() => {
       $('meChip').style.setProperty('--hc', '#8b3dff');
     }
 
+    $('seasonTitle').textContent = `${tr('Сезон', 'Season')} ${romanNum(state.season || 1)}`;
     const btn = $('playBtn');
-    btn.disabled = done;
     const started = !done && state.schedule[state.round].some((m) => m.result);
-    btn.querySelector('span').textContent = done ? tr('Сезон завершён', 'Season over')
+    btn.querySelector('span').textContent = done ? tr('▶ Следующий сезон', '▶ Next season')
       : started ? tr(`▶ Продолжить тур ${state.round + 1}`, `▶ Continue round ${state.round + 1}`) : tr(`▶ Играть тур ${state.round + 1}`, `▶ Play round ${state.round + 1}`);
   }
 
@@ -865,7 +865,7 @@ const App = (() => {
               <div class="lu-level">${tr('Уровень', 'Level')} <b>${h.level - h.pending + 1}</b></div>
             </div>
           </div>
-          ${special ? `<p class="lu-special">${tr('Особые карточки 4-го уровня', 'Special level 4 cards')}</p>` : ''}
+          ${special ? `<p class="lu-special">${tr(`Особые карточки ${SPECIAL_LEVEL}-го уровня`, `Special level ${SPECIAL_LEVEL} cards`)}</p>` : ''}
           <p class="lu-hint">${human ? tr('Выберите улучшение', 'Choose an upgrade') : tr('ИИ выбирает улучшение…', 'AI is choosing an upgrade…')}</p>
           <div class="lu-cards">${cards.map((c, i) => {
             const cur = c.stat ? h.stats[c.stat] : null;
@@ -937,7 +937,8 @@ const App = (() => {
           : champ.isPlayer ? tr('Это ваш герой! Поздравляем! 🎉', 'That’s your hero! Congratulations! 🎉') : tr(`Ваш герой занял ${myPlace}-е место.`, `Your hero finished in ${I18N.place(myPlace)}.`)}</p>
         <div class="champ-actions">
           <button class="ghost" data-act="close">${tr('К таблице', 'To the standings')}</button>
-          <button class="cta" data-act="new"><span>${tr('Новый турнир', 'New tournament')}</span></button>
+          <button class="ghost" data-act="new">${tr('Новый турнир', 'New tournament')}</button>
+          <button class="cta" data-act="next"><span>${tr('▶ Следующий сезон', '▶ Next season')}</span></button>
         </div>
       </div>`;
     $('fx').append(el);
@@ -947,6 +948,81 @@ const App = (() => {
       el.classList.add('out');
       setTimeout(() => el.remove(), 500);
       if (act.dataset.act === 'new') newTournament(true);
+      if (act.dataset.act === 'next') nextSeason();
+    });
+  }
+
+  /* ---------------------------------------------------------
+   *  Межсезонье и предсезонное окно
+   * ------------------------------------------------------- */
+  const WHY = {
+    break: { icon: '⏳', name: () => tr('Перерыв', 'Time off'), desc: () => tr(`−${OFFSEASON.breakLoss} к характеристикам выше ${OFFSEASON.pivot}`, `−${OFFSEASON.breakLoss} to attributes above ${OFFSEASON.pivot}`) },
+    rest: { icon: '🛌', name: () => tr('Отдых', 'Rest'), desc: () => tr(`+${OFFSEASON.restGain} к характеристикам ниже ${OFFSEASON.pivot}`, `+${OFFSEASON.restGain} to attributes below ${OFFSEASON.pivot}`) },
+    wear: { icon: '🩹', name: () => tr('Износ', 'Wear'), desc: () => tr(`−${OFFSEASON.wear} очка случайным характеристикам`, `−${OFFSEASON.wear} points to random attributes`) },
+  };
+
+  function nextSeason() {
+    if (busy || transitioning || !state || !League.finished(state)) return;
+    const order = League.standings(state).map((r) => r.id); // места прошедшего сезона
+    const changes = League.nextSeason(state);
+    League.save(state);
+    selRound = 0;
+    tab = 'table';
+    preseason(changes, order).then(() => guarded(() => blinds(() => {
+      renderLeague();
+      syncTabs(true);
+      show('league');
+      stagger($('pane-table'));
+    })));
+  }
+
+  // Предсезонное окно: как изменились характеристики каждого героя и почему
+  function preseason(changes, order) {
+    return new Promise((resolve) => {
+      const el = document.createElement('div');
+      el.className = 'preseason';
+      Sound.play('levelup');
+      const sum = (o) => o.str + o.agi + o.end;
+      const cards = order.map((id, i) => {
+        const h = hero(id), c = changes[id];
+        const d = sum(c.after) - sum(c.before);
+        const rows = STATS.map((st) => {
+          const b = c.before[st.key], a = c.after[st.key], dd = a - b;
+          const why = c.reasons.filter((r) => r.stat === st.key);
+          const chips = Object.keys(WHY).map((k) => {
+            const n = why.filter((r) => r.why === k).reduce((x, r) => x + r.delta, 0);
+            return why.some((r) => r.why === k) ? `<i class="ps-why ${n > 0 ? 'up' : 'down'}" title="${WHY[k].name()}">${WHY[k].icon}${n > 0 ? '+' : '−'}${Math.abs(n)}</i>` : '';
+          }).join('');
+          const lo = Math.min(a, b), hi = Math.max(a, b);
+          return `<div class="ps-stat">
+            <span class="ps-name" title="${st.name}">${st.icon}</span>
+            <div class="ps-bar"><i style="width:${Math.min(1, lo / 20) * 100}%"></i>${dd
+              ? `<i class="${dd > 0 ? 'gain' : 'loss'}" style="left:${Math.min(1, lo / 20) * 100}%;width:${(Math.min(1, hi / 20) - Math.min(1, lo / 20)) * 100}%"></i>` : ''}</div>
+            <span class="ps-val">${b}<em>→</em><b class="${dd > 0 ? 'up' : dd < 0 ? 'down' : ''}">${a}</b></span>
+            <span class="ps-chips">${chips}</span>
+          </div>`;
+        }).join('');
+        return `<div class="ps-card" style="--hc:${h.color};--i:${i}">
+          <div class="ps-head">${ava(h)}<div><b>${i === 0 ? '👑 ' : ''}${h.name}</b><small>${I18N.place(i + 1)} · ${tr('ур.', 'Lv.')} ${h.level}</small></div>
+            <span class="ps-sum ${d > 0 ? 'up' : d < 0 ? 'down' : ''}" title="${tr('Сумма характеристик', 'Attribute total')}">${sum(c.before)} → ${sum(c.after)}</span></div>
+          ${rows}
+        </div>`;
+      }).join('');
+      el.innerHTML = `
+        <div class="ps-box">
+          <div class="kicker">${tr('Межсезонье', 'Off-season')}</div>
+          <h2>${tr('Сезон', 'Season')} ${romanNum(state.season)}</h2>
+          <div class="ps-legend">${Object.values(WHY).map((w) => `<span><b>${w.icon} ${w.name()}</b> ${w.desc()}</span>`).join('')}
+            <span><b>✚ ${tr('Травмы', 'Injuries')}</b> ${tr('зажили', 'healed')}</span></div>
+          <div class="ps-grid">${cards}</div>
+          <p class="ps-keep">${tr('Уровни, опыт и прокачка сохраняются', 'Levels, XP and upgrades carry over')}</p>
+          <button class="cta" id="psGo"><span>${tr(`▶ Начать сезон ${romanNum(state.season)}`, `▶ Start season ${romanNum(state.season)}`)}</span></button>
+        </div>`;
+      $('fx').append(el);
+      el.querySelector('#psGo').addEventListener('click', () => {
+        el.classList.add('out');
+        setTimeout(() => { el.remove(); resolve(); }, 450);
+      }, { once: true });
     });
   }
 
@@ -1039,7 +1115,7 @@ const App = (() => {
 
     $('chooseBtn').addEventListener('click', (e) => choose(e));
     $('spectateBtn').addEventListener('click', (e) => choose(e, true));
-    $('playBtn').addEventListener('click', playRound);
+    $('playBtn').addEventListener('click', () => (state && League.finished(state) ? nextSeason() : playRound()));
     $('newBtn').addEventListener('click', () => newTournament(false));
     $('heroBack').addEventListener('click', backToLeague);
     $('tabs').addEventListener('click', (e) => {

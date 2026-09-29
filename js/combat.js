@@ -23,7 +23,7 @@ const Combat = (() => {
   const hasInj = (p, id) => p.injuries.includes(id) || p.newInjuries.includes(id);
   // пассивка работает, если это её герой и она не отключена «Переломом ребра»
   const hasPassive = (p, id) => p.id === id && !p.noPassive;
-  // пассивка усилена карточкой 4-го уровня
+  // пассивка усилена особой карточкой уровня
   const upPassive = (p, id) => hasPassive(p, id) && p.empowered;
 
   // Пересчёт параметров, зависящих от травм: «Перелом ноги» (−50% ловкости → дороже атака),
@@ -47,7 +47,7 @@ const Combat = (() => {
       hero,
       id: hero.id,
       stats: { ...hero.stats },
-      empowered: picks.includes('empower'), // усиленная пассивка (карточка 4-го уровня)
+      empowered: picks.includes('empower'), // усиленная пассивка (особая карточка уровня)
       rageReady: picks.includes('rage'),    // перк «Ярость»
       raging: false,
       charge: hero.id === 'goose' ? [0, 0] : [0], // «Два ствола» — вторая шкала

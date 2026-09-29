@@ -66,11 +66,11 @@ const UPGRADES = [
   { id: 'agi', icon: '🤸', name: T('Ловкость', 'Agility'), desc: T('+2 к ловкости', '+2 Agility'), stat: 'agi', amount: 2, apply: (prog) => { prog.bonus.agi += 2; } },
   { id: 'end', icon: '🛡️', name: T('Выносливость', 'Endurance'), desc: T('+2 к выносливости', '+2 Endurance'), stat: 'end', amount: 2, apply: (prog) => { prog.bonus.end += 2; } },
 ];
-// Карточки 4-го уровня: вместо трёх случайных — строго эти три
+// Карточки 3-го уровня: вместо трёх случайных — строго эти три
 const RAGE_SCORE = 1500;   // «Ярость»: сколько очков за бой нужно набрать
 const RAGE_BOOST = 0.3;    // …и на сколько растут характеристики (не выше 20)
 const RAGE_CAP = 20;
-const SPECIAL_LEVEL = 4;
+const SPECIAL_LEVEL = 3;
 const SPECIAL_UPGRADES = [
   { id: 'empower', icon: '⚡', name: T('Усиление пассивки', 'Empowered passive'), desc: T('Своя пассивка становится сильнее', 'Your passive gets stronger'),
     apply: () => {} },
@@ -81,6 +81,12 @@ const SPECIAL_UPGRADES = [
       `After scoring ${RAGE_SCORE} points in a bout, flies into a rage: all attributes +30% (max 20) until the end of the bout`),
     apply: () => {} },
 ];
+// Межсезонье: характеристика выше pivot теряет breakLoss («перерыв»), ниже pivot — получает restGain («отдых»),
+// плюс wear очков износа случайным характеристикам. Не ниже 1.
+const OFFSEASON = { pivot: 10, breakLoss: 1, restGain: 1, wear: 2 };
+const romanNum = (n) => [['X', 10], ['IX', 9], ['V', 5], ['IV', 4], ['I', 1]]
+  .reduce((acc, [r, v]) => { while (n >= v) { acc.s += r; n -= v; } return acc; }, { s: '' }).s;
+
 const UPGRADE_BY_ID = Object.fromEntries([...UPGRADES, ...SPECIAL_UPGRADES].map((u) => [u.id, u]));
 
 /*

@@ -94,7 +94,7 @@ const League = (() => {
   // Какой уровень герой сейчас «выбирает» (улучшения выбираются по порядку уровней)
   const pickLevel = (e) => e.level - e.pending + 1;
 
-  // Карточки для очередного выбора: на 4-м уровне — строго усиление своей пассивки, +2 ко всему и «Ярость»,
+  // Карточки для очередного выбора: на особом уровне — строго усиление своей пассивки, +2 ко всему и «Ярость»,
   // на остальных — 3 случайные
   function cardsFor(e, id) {
     if (pickLevel(e) !== SPECIAL_LEVEL) return rollUpgrades(3);
@@ -167,11 +167,56 @@ const League = (() => {
   function create(playerId, roster) {
     return {
       version: 1,
+      season: 1,
+      history: [], // итоги прошлых сезонов: [{ season, table: [{ id, pts, w, d, l }] }]
       playerId,
       roster,
       schedule: bergerSchedule(shuffle(HEROES.map((h) => h.id))),
       round: 0,
     };
+  }
+
+  /* ---------- межсезонье ---------- */
+  // Изменения характеристик между сезонами (правила — OFFSEASON в data.js):
+  //   перерыв: каждая характеристика выше 10 теряет 1; отдых: каждая ниже 10 получает +1;
+  //   износ: ещё −2 очка случайным характеристикам (оба в одну или по одному в разные); не ниже 1.
+  // Возвращает { [id]: { before, after, reasons: [{ stat, delta, why: 'break' | 'rest' | 'wear' }] } }
+  function offseason(roster) {
+    const out = {};
+    for (const h of HEROES) {
+      const e = roster[h.id];
+      const total = (k) => h.stats[k] + e.bonus[k];
+      const keys = STATS.map((st) => st.key);
+      const before = Object.fromEntries(keys.map((k) => [k, total(k)]));
+      const reasons = [];
+      const change = (k, delta, why) => { e.bonus[k] += delta; reasons.push({ stat: k, delta, why }); };
+      for (const k of keys) {
+        if (before[k] > OFFSEASON.pivot) change(k, -OFFSEASON.breakLoss, 'break');
+        else if (before[k] < OFFSEASON.pivot) change(k, OFFSEASON.restGain, 'rest');
+      }
+      for (let n = 0; n < OFFSEASON.wear; n++) {
+        const can = keys.filter((k) => total(k) > 1);
+        if (!can.length) break;
+        change(can[rnd(can.length)], -1, 'wear');
+      }
+      e.injuries = []; // за межсезонье все травмы заживают
+      out[h.id] = { before, after: Object.fromEntries(keys.map((k) => [k, total(k)])), reasons };
+    }
+    return out;
+  }
+
+  // Следующий сезон: итоги в историю, межсезонье, новое расписание. Уровни, опыт и прокачка сохраняются.
+  function nextSeason(state) {
+    state.history = state.history || [];
+    state.history.push({
+      season: state.season || 1,
+      table: standings(state).map(({ id, pts, w, d, l }) => ({ id, pts, w, d, l })),
+    });
+    const changes = offseason(state.roster);
+    state.season = (state.season || 1) + 1;
+    state.schedule = bergerSchedule(shuffle(HEROES.map((h) => h.id)));
+    state.round = 0;
+    return changes;
   }
 
   function standings(state) {
@@ -224,5 +269,5 @@ const League = (() => {
     try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
   }
 
-  return { createRoster, updateInjuries, outcome, xpMultiplier, xpGain, addXp, rollUpgrades, cardsFor, pickLevel, injuryPenalty, applyUpgrade, bergerSchedule, create, standings, heroMatches, finished, load, save, clear };
+  return { createRoster, updateInjuries, outcome, xpMultiplier, xpGain, addXp, rollUpgrades, cardsFor, pickLevel, injuryPenalty, applyUpgrade, bergerSchedule, create, offseason, nextSeason, standings, heroMatches, finished, load, save, clear };
 })();

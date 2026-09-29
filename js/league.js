@@ -91,6 +91,36 @@ const League = (() => {
     return shuffle(UPGRADES).slice(0, Math.min(n, UPGRADES.length));
   }
 
+  // Какой уровень герой сейчас «выбирает» (улучшения выбираются по порядку уровней)
+  const pickLevel = (e) => e.level - e.pending + 1;
+
+  // Карточки для очередного выбора: на 4-м уровне — строго усиление своей пассивки, +2 ко всему и «Ярость»,
+  // на остальных — 3 случайные
+  function cardsFor(e, id) {
+    if (pickLevel(e) !== SPECIAL_LEVEL) return rollUpgrades(3);
+    const ps = PASSIVES[id];
+    return SPECIAL_UPGRADES.map((c) => (c.id === 'empower'
+      ? { ...c, icon: ps.icon, name: `⚡ ${ps.name}`, desc: ps.up }
+      : c));
+  }
+
+  // Травма ослабляет: за каждую полученную в бою травму −2 очка случайных характеристик
+  // (оба в одну или по одному в разные), но характеристика не опускается ниже 1.
+  // Возвращает { str: n, agi: n, end: n } — насколько уменьшилась каждая.
+  const INJURY_STAT_LOSS = 2;
+  function injuryPenalty(e, id, injuries) {
+    const base = HERO_BY_ID[id].stats;
+    const lost = { str: 0, agi: 0, end: 0 };
+    for (let k = 0; k < injuries * INJURY_STAT_LOSS; k++) {
+      const can = Object.keys(lost).filter((s) => base[s] + e.bonus[s] > 1);
+      if (!can.length) break;
+      const s = can[rnd(can.length)];
+      e.bonus[s]--;
+      lost[s]++;
+    }
+    return lost;
+  }
+
   function applyUpgrade(e, up) {
     up.apply(e);
     e.picks.push(up.id);
@@ -194,5 +224,5 @@ const League = (() => {
     try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
   }
 
-  return { createRoster, updateInjuries, outcome, xpMultiplier, xpGain, addXp, rollUpgrades, applyUpgrade, bergerSchedule, create, standings, heroMatches, finished, load, save, clear };
+  return { createRoster, updateInjuries, outcome, xpMultiplier, xpGain, addXp, rollUpgrades, cardsFor, pickLevel, injuryPenalty, applyUpgrade, bergerSchedule, create, standings, heroMatches, finished, load, save, clear };
 })();

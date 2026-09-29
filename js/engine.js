@@ -770,7 +770,7 @@ const Engine = (() => {
       el.querySelector('.dmg').textContent = p.dmg;
       el.querySelector('.hp-max').textContent = p.maxHp;
       el.querySelector('.charge.c2').hidden = p.charge.length < 2;
-      el.classList.remove('ko', 'hit', 'lunge', 'injured');
+      el.classList.remove('ko', 'hit', 'lunge', 'injured', 'raging');
       el.querySelectorAll('.inj-stamp').forEach((x) => x.remove());
       el.querySelectorAll('.card-pop').forEach((x) => x.remove());
       p.el = el;
@@ -825,7 +825,11 @@ const Engine = (() => {
     const ps = PASSIVES[p.id];
     const chips = [p.noPassive
       ? `<span class="st-chip passive off" title="${tr('Отключена переломом ребра', 'Disabled by a broken rib')}">${ps.icon} <s>${ps.name}</s></span>`
-      : `<span class="st-chip passive" title="${ps.desc}">${ps.icon} ${ps.name}</span>`];
+      : p.empowered
+        ? `<span class="st-chip passive up" title="${ps.desc}\n⚡ ${ps.up}">${ps.icon} ${ps.name} ⚡</span>`
+        : `<span class="st-chip passive" title="${ps.desc}">${ps.icon} ${ps.name}</span>`];
+    if (p.raging) chips.push(`<span class="st-chip rage" title="${UPGRADE_BY_ID.rage.desc}">🔥 ${tr('Ярость', 'Rage')}</span>`);
+    else if (p.rageReady) chips.push(`<span class="st-chip" title="${UPGRADE_BY_ID.rage.desc}">🔥 ${Math.min(p.score, RAGE_SCORE)} / ${RAGE_SCORE}</span>`);
     if (p.bleed) chips.push(`<span class="st-chip bad" title="${tr('Кровотечение: в начале каждого хода (красных камней − 10) × 4 урона', 'Bleeding: (red gems − 10) × 4 damage at the start of each turn')}">🩸 ${tr('Истекает кровью', 'Bleeding')}</span>`);
     if (p.aim) chips.push(`<span class="st-chip good" title="${tr(`Прицеливание: ${p.aim * 7}% шанс крита ×2`, `Aiming: ${p.aim * 7}% chance of a ×2 crit`)}">🎯 ×${p.aim}</span>`);
     if (p.snack) chips.push(`<span class="st-chip good" title="${tr(`Перекус: ${p.snack * 3}% шанс крита ×1,75`, `Snack Time: ${p.snack * 3}% chance of a ×1.75 crit`)}">🌯 ×${p.snack}</span>`);
@@ -872,6 +876,22 @@ const Engine = (() => {
     el[key] = setTimeout(() => el.classList.remove(cls), ms);
   }
   const other = (p) => players[1 - players.indexOf(p)];
+
+  // «Ярость»: бойцу +30% ко всем характеристикам до конца боя
+  function showRage(p, r) {
+    p.el.classList.add('raging');
+    restartClass(p.el, 'rage-burst', 1200);
+    banner(tr('ЯРОСТЬ!', 'RAGE!'), '#ff5a1f');
+    Sound.play('crit');
+    cardPop(p, '🔥 +30%', 'crit');
+    p.el.querySelector('.dmg').textContent = p.dmg;
+    p.el.querySelector('.hp-max').textContent = p.maxHp;
+    renderHp(p);
+    p.charge.forEach((_, b) => renderCharge(p, b, true));
+    renderStatus(p);
+    const diff = STATS.map((s) => `${s.icon} ${r.before[s.key]}→${r.after[s.key]}`).join(' ');
+    log(tr(`🔥 <b>${p.hero.name}</b> впадает в ярость: ${diff}`, `🔥 <b>${p.hero.name}</b> flies into a rage: ${diff}`), '#ff5a1f');
+  }
 
   function showKO(def, att) {
     def.el.classList.add('ko');
@@ -1033,6 +1053,9 @@ const Engine = (() => {
       p.score += pts;
       p.maxCombo = Math.max(p.maxCombo, combo);
       bumpScore(p);
+      const rage = Combat.checkRage(p);
+      if (rage) showRage(p, rage);
+      else if (p.rageReady && !p.raging) renderStatus(p); // прогресс до «Ярости»
 
       let sx = 0, sy = 0;
       for (const i of set) { sx += px(i % COLS); sy += px((i / COLS) | 0); }
@@ -1224,6 +1247,7 @@ const Engine = (() => {
       g = s.grid;
       for (const step of s.steps) {
         p.score += step.base * Combat.comboMult(p, step.combo);
+        Combat.checkRage(p);
         for (const tg of Combat.chargeTargets(p, step.combo, step.base)) {
           p.charge[tg.bar] += tg.pts;
           while (p.charge[tg.bar] >= p.cost && def.hp > 0) { p.charge[tg.bar] -= p.cost; Combat.hit(p, def, g, tg.bar ? 'charge2' : 'charge'); }
@@ -1266,6 +1290,8 @@ const Engine = (() => {
     turn = r.turn;
     players.forEach((p) => {
       renderInjuries(p);
+      p.el.classList.toggle('raging', p.raging);
+      p.el.querySelector('.dmg').textContent = p.dmg;
       p.el.querySelector('.hp-max').textContent = p.maxHp;
       renderHp(p);
       p.charge.forEach((_, b) => renderCharge(p, b));

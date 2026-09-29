@@ -13,7 +13,7 @@ const Combat = (() => {
   const DUEL_ENEMY_FACTOR = 0.4; // доля урона соперника Пыли в дополнительных ударах
   const SOFA_BASE_DODGE = 0.1;   // «Невозмутимость»: базовый шанс уворота
   // «Два ствола»: множитель комбо для второй шкалы не выше cap, урон ударов со второй шкалы × dmgFactor
-  const TWO_BARRELS = { cap: 2, dmgFactor: 0.5 };
+  const TWO_BARRELS = { cap: 2, capUp: 2.5, dmgFactor: 0.5 };
 
   const count = (g, t) => g.reduce((s, row) => s + row.reduce((k, x) => k + (x === t), 0), 0);
   // «количество камней цвета минус 10», не меньше нуля
@@ -23,26 +23,36 @@ const Combat = (() => {
   const hasInj = (p, id) => p.injuries.includes(id) || p.newInjuries.includes(id);
   // пассивка работает, если это её герой и она не отключена «Переломом ребра»
   const hasPassive = (p, id) => p.id === id && !p.noPassive;
+  // пассивка усилена карточкой 4-го уровня
+  const upPassive = (p, id) => hasPassive(p, id) && p.empowered;
 
   // Пересчёт параметров, зависящих от травм: «Перелом ноги» (−50% ловкости → дороже атака),
   // «Перелом ребра» (−20% макс. здоровья, пассивка отключена)
+  // p.stats — текущие характеристики (могут вырасти от «Ярости»); рост макс. здоровья добавляется и к текущему
   function refresh(p) {
-    const s = p.hero.stats;
+    const s = p.stats;
+    p.dmg = COMBAT.damage(s);
     p.cost = COMBAT.attackCost({ ...s, agi: hasInj(p, 'leg') ? s.agi / 2 : s.agi });
     const full = COMBAT.maxHp(s);
     const max = hasInj(p, 'rib') ? Math.round(full * 0.8) : full;
-    p.hp = p.maxHp === undefined ? max : Math.min(p.hp, max);
+    if (p.maxHp === undefined) p.hp = max;
+    else p.hp = max > p.maxHp ? p.hp + (max - p.maxHp) : Math.min(p.hp, max);
     p.maxHp = max;
     p.noPassive = hasInj(p, 'rib');
   }
 
   function fighter(hero) {
+    const picks = hero.picks || [];
     const p = {
       hero,
       id: hero.id,
-      dmg: COMBAT.damage(hero.stats),
+      stats: { ...hero.stats },
+      empowered: picks.includes('empower'), // усиленная пассивка (карточка 4-го уровня)
+      rageReady: picks.includes('rage'),    // перк «Ярость»
+      raging: false,
       charge: hero.id === 'goose' ? [0, 0] : [0], // «Два ствола» — вторая шкала
       bleed: false,   // на бойце висит кровотечение (от Резака)
+      bleedPer: 4,    // урон кровотечения за каждый красный камень сверх 10
       aim: 0,         // стаки «Прицеливания» (Отмороз)
       snack: 0,       // стаки «Перекуса» (Шаурмен)
       injuries: (hero.injuries || []).map((i) => i.id), // травмы, с которыми вышел на бой
@@ -74,7 +84,9 @@ const Combat = (() => {
   function chargeTargets(p, combo, base) {
     const m = comboMult(p, combo);
     const t = [{ bar: 0, pts: base * m }];
-    if (hasPassive(p, 'goose') && combo >= 2) t.push({ bar: 1, pts: base * Math.min(m, TWO_BARRELS.cap) });
+    if (hasPassive(p, 'goose') && combo >= 2) {
+      t.push({ bar: 1, pts: base * Math.min(m, upPassive(p, 'goose') ? TWO_BARRELS.capUp : TWO_BARRELS.cap) });
+    }
     return t;
   }
 
@@ -83,7 +95,7 @@ const Combat = (() => {
     p.touched = false;
     const r = { bleed: 0, ko: false, skip: false };
     if (p.bleed && p.hp > 0) {
-      r.bleed = over10(g, GEM.red) * 4;
+      r.bleed = over10(g, GEM.red) * p.bleedPer;
       if (r.bleed > 0) { p.hp = Math.max(0, p.hp - r.bleed); p.touched = true; }
       r.ko = p.hp <= 0;
     }
@@ -93,7 +105,9 @@ const Combat = (() => {
 
   const duelOn = (players) => players.some((p) => hasPassive(p, 'dumpling'));
   // идёт ли у бойца «Дуэль на закате» (p.moves уже учитывает текущий ход)
-  const duelTurn = (players, p, moveCap) => duelOn(players) && p.moves > moveCap - DUEL_MOVES;
+  // сколько последних ходов идёт дуэль (усиленная — на 1 больше)
+  const duelMoves = (players) => (players.some((p) => upPassive(p, 'dumpling')) ? DUEL_MOVES + 1 : DUEL_MOVES);
+  const duelTurn = (players, p, moveCap) => duelOn(players) && p.moves > moveCap - duelMoves(players);
 
   // Удар att по def. kind: 'charge' — от шкалы, 'charge2' — от второй шкалы «Двух стволов»,
   // 'ram' — «Таран», 'duel' — «Дуэль на закате»
@@ -101,6 +115,7 @@ const Combat = (() => {
     let base = att.dmg;
     if (kind === 'duel' && att.id !== 'dumpling') base = Math.ceil(att.dmg * DUEL_ENEMY_FACTOR);
     if (kind === 'charge2') base = Math.ceil(att.dmg * TWO_BARRELS.dmgFactor);
+    if (kind === 'ram' && upPassive(att, 'cat')) base = Math.round(att.dmg * 1.25);
     const ev = { kind, base, dmg: 0, crit: false, missed: false, dodged: false, bleedApplied: false, drainPct: 0, aimLost: 0 };
 
     // «Перелом руки»: (3 × красных камней)% шанс промахнуться — удар пропадает целиком
@@ -111,11 +126,12 @@ const Combat = (() => {
 
     // криты: «Хедшот» (×2) и «Перекус» (×1,75)
     let mult = 1;
-    if (hasPassive(att, 'granny') && att.aim > 0 && rnd() < Math.min(1, att.aim * 0.07)) { ev.crit = true; mult = 2; }
+    if (hasPassive(att, 'granny') && att.aim > 0 && rnd() < Math.min(1, att.aim * (upPassive(att, 'granny') ? 0.09 : 0.07))) { ev.crit = true; mult = 2; }
     else if (hasPassive(att, 'shawarma') && att.snack > 0 && rnd() < Math.min(1, att.snack * 0.03)) { ev.crit = true; mult = 1.75; }
 
     // «Невозмутимость»: шанс полностью проигнорировать удар
-    if (hasPassive(def, 'sofa') && rnd() < Math.min(1, SOFA_BASE_DODGE + over10(g, GEM.purple) * 0.05)) ev.dodged = true;
+    const dodgeBase = SOFA_BASE_DODGE + (upPassive(def, 'sofa') ? 0.05 : 0);
+    if (hasPassive(def, 'sofa') && rnd() < Math.min(1, dodgeBase + over10(g, GEM.purple) * 0.05)) ev.dodged = true;
 
     if (!ev.dodged) {
       // Травма определяется до расчёта урона: шанс выше при крите, тип — из тех, которых ещё нет
@@ -139,12 +155,16 @@ const Combat = (() => {
       }
 
       // «Кровотечение»: шанс (красные − 10) × 5 % при попадании, до конца боя
-      if (hasPassive(att, 'frog') && !def.bleed && def.hp > 0 && rnd() < Math.min(1, over10(g, GEM.red) * 0.05)) { def.bleed = true; ev.bleedApplied = true; }
+      if (hasPassive(att, 'frog') && !def.bleed && def.hp > 0 && rnd() < Math.min(1, over10(g, GEM.red) * 0.05)) {
+        def.bleed = true;
+        def.bleedPer = upPassive(att, 'frog') ? 5 : 4;
+        ev.bleedApplied = true;
+      }
     }
 
     // «Наручники»: каждая атака срезает процент накопленного заряда (со всех шкал)
     if (hasPassive(att, 'plumber')) {
-      ev.drainPct = Math.min(100, over10(g, GEM.yellow) * 6);
+      ev.drainPct = Math.min(100, over10(g, GEM.yellow) * (upPassive(att, 'plumber') ? 8 : 6));
       if (ev.drainPct > 0) def.charge = def.charge.map((c) => Math.floor(c * (1 - ev.drainPct / 100)));
     }
 
@@ -159,12 +179,26 @@ const Combat = (() => {
   function lineOfFive(p, g) {
     if (hasPassive(p, 'cat')) return { ram: true };
     if (hasPassive(p, 'shawarma')) {
-      const heal = Math.max(0, Math.min(p.maxHp - p.hp, over10(g, GEM.green) * 4));
+      const heal = Math.max(0, Math.min(p.maxHp - p.hp, over10(g, GEM.green) * (upPassive(p, 'shawarma') ? 6 : 4)));
       p.hp += heal;
       p.snack++;
       return { heal, snack: p.snack };
     }
     return null;
+  }
+
+  // «Ярость»: набрав за бой RAGE_SCORE очков, боец получает +30% ко всем характеристикам (не выше 20) до конца боя.
+  // Вызывать после каждого начисления очков; возвращает { before, after } в момент срабатывания.
+  function checkRage(p) {
+    if (!p.rageReady || p.raging || p.score < RAGE_SCORE || p.hp <= 0) return null;
+    p.raging = true;
+    const before = { ...p.stats };
+    for (const k of Object.keys(p.stats)) {
+      const s = p.stats[k];
+      p.stats[k] = Math.max(s, Math.min(RAGE_CAP, Math.round(s * (1 + RAGE_BOOST))));
+    }
+    refresh(p);
+    return { before, after: { ...p.stats } };
   }
 
   // Конец хода: «Прицеливание» за ход без урона
@@ -175,6 +209,6 @@ const Combat = (() => {
 
   return {
     GEM, DUEL_MOVES, TWO_BARRELS, fighter, matchStart, comboMult, chargeTargets, startTurn,
-    duelOn, duelTurn, hit, lineOfFive, endTurn, count, over10, hasInj, hasPassive,
+    duelOn, duelMoves, duelTurn, hit, lineOfFive, checkRage, endTurn, count, over10, hasInj, hasPassive, upPassive,
   };
 })();

@@ -66,7 +66,22 @@ const UPGRADES = [
   { id: 'agi', icon: '🤸', name: T('Ловкость', 'Agility'), desc: T('+2 к ловкости', '+2 Agility'), stat: 'agi', amount: 2, apply: (prog) => { prog.bonus.agi += 2; } },
   { id: 'end', icon: '🛡️', name: T('Выносливость', 'Endurance'), desc: T('+2 к выносливости', '+2 Endurance'), stat: 'end', amount: 2, apply: (prog) => { prog.bonus.end += 2; } },
 ];
-const UPGRADE_BY_ID = Object.fromEntries(UPGRADES.map((u) => [u.id, u]));
+// Карточки 4-го уровня: вместо трёх случайных — строго эти три
+const RAGE_SCORE = 1500;   // «Ярость»: сколько очков за бой нужно набрать
+const RAGE_BOOST = 0.3;    // …и на сколько растут характеристики (не выше 20)
+const RAGE_CAP = 20;
+const SPECIAL_LEVEL = 4;
+const SPECIAL_UPGRADES = [
+  { id: 'empower', icon: '⚡', name: T('Усиление пассивки', 'Empowered passive'), desc: T('Своя пассивка становится сильнее', 'Your passive gets stronger'),
+    apply: () => {} },
+  { id: 'all', icon: '🌟', name: T('Всё и сразу', 'All-rounder'), desc: T('+2 к силе, ловкости и выносливости', '+2 Strength, Agility and Endurance'),
+    apply: (prog) => { prog.bonus.str += 2; prog.bonus.agi += 2; prog.bonus.end += 2; } },
+  { id: 'rage', icon: '🔥', name: T('Ярость', 'Rage'),
+    desc: T(`Набрав за бой ${RAGE_SCORE} очков, впадает в ярость: все характеристики +30% (не выше 20) до конца боя`,
+      `After scoring ${RAGE_SCORE} points in a bout, flies into a rage: all attributes +30% (max 20) until the end of the bout`),
+    apply: () => {} },
+];
+const UPGRADE_BY_ID = Object.fromEntries([...UPGRADES, ...SPECIAL_UPGRADES].map((u) => [u.id, u]));
 
 /*
  * Травмы. Шанс при пропущенном ударе: 3%, при критическом — 33%.
@@ -100,41 +115,65 @@ const PASSIVES = {
     icon: '🌅', name: T('Дуэль на закате', 'Sunset Duel'),
     desc: T('В последние 3 хода матча после каждого хода и Пыль, и соперник наносят дополнительный удар, не тратя заряд. Удар соперника — 40% урона, у Пыли — полный.',
       'In the last 3 moves of the match, after every move both Dust and his opponent land an extra strike without spending charge. The opponent deals 40% damage, Dust deals full damage.'),
+
+    up: T('Дуэль начинается с последних 4 ходов вместо 3.',
+      'The duel starts in the last 4 moves instead of 3.'),
   },
   frog: {
     icon: '🩸', name: T('Кровотечение', 'Bloodletting'),
     desc: T('Каждый удар с шансом (красных камней на поле − 10) × 5 % вешает на врага кровотечение до конца боя. В начале каждого хода врага оно наносит (красных камней на поле − 10) × 4 урона.',
       'Every strike has a (red gems on the board − 10) × 5 % chance to make the enemy bleed until the end of the bout. At the start of each enemy turn it deals (red gems on the board − 10) × 4 damage.'),
+
+    up: T('Кровотечение наносит +1 урона за каждый красный камень сверх 10: (красных − 10) × 5.',
+      'Bleeding deals +1 damage per red gem above 10: (red − 10) × 5.'),
   },
   cat: {
     icon: '🐂', name: T('Таран', 'Battering Ram'),
     desc: T('Каждая собранная линия из 5 камней сразу даёт удар, не тратя заряд.',
       'Every line of 5 gems instantly lands a strike without spending charge.'),
+
+    up: T('Таран наносит 125% урона.',
+      'The ram deals 125% damage.'),
   },
   plumber: {
     icon: '🔗', name: T('Наручники', 'Handcuffs'),
     desc: T('Каждая его атака отнимает у соперника (звёзд на поле − 10) × 6 % накопленного заряда — «задерживает» его атаку.',
       'Each of his attacks drains (stars on the board − 10) × 6 % of the opponent’s charge, “detaining” their attack.'),
+
+    up: T('Наручники срезают +2% заряда за каждую звезду: (звёзд − 10) × 8 %.',
+      'Handcuffs drain +2% charge per star: (stars − 10) × 8 %.'),
   },
   goose: {
     icon: '🔫', name: T('Два ствола', 'Two Barrels'),
     desc: T('Две шкалы заряда. Первая заряжается как обычно. Вторая дополнительно заряжается от каскадов с комбо ×2 и выше (с множителем не выше ×2); удар с неё наносит 50% урона. Эффекты на заряд действуют на обе.',
       'Two charge bars. The first charges as usual. The second also charges from cascades with combo ×2 or higher (multiplier capped at ×2); its strike deals 50% damage. Charge effects apply to both.'),
+
+    up: T('Предел множителя для второй шкалы — ×2,5 вместо ×2.',
+      'The second bar’s multiplier cap is ×2.5 instead of ×2.'),
   },
   shawarma: {
     icon: '🌯', name: T('Перекус', 'Snack Time'),
     desc: T('Каждая линия из 5 камней лечит на (зелёных камней − 10) × 4 здоровья и даёт стак: +3% шанса крита ×1,75 за каждый стак.',
       'Every line of 5 gems heals (green gems − 10) × 4 HP and gives a stack: +3% chance of a ×1.75 crit per stack.'),
+
+    up: T('Перекус лечит на 50% больше: (зелёных − 10) × 6.',
+      'Snack Time heals 50% more: (green − 10) × 6.'),
   },
   sofa: {
     icon: '😐', name: T('Невозмутимость', 'Unbothered'),
     desc: T('С шансом 10% + (фиолетовых камней на поле − 10) × 5 % полностью игнорирует входящий удар — «даже не моргнул».',
       'With a 10% + (purple gems on the board − 10) × 5 % chance he fully ignores an incoming strike: “didn’t even blink”.'),
+
+    up: T('+5% к шансу уворота: 15% + (фиолетовых − 10) × 5 %.',
+      '+5% dodge chance: 15% + (purple − 10) × 5 %.'),
   },
   granny: {
     icon: '🎯', name: T('Хедшот', 'Headshot'),
     desc: T('Каждый его ход без полученного и нанесённого урона даёт стак «Прицеливания»: +7% шанса крита ×2. Любой удар с его участием сбрасывает все стаки.',
       'Every turn of his without taking or dealing damage gives an “Aiming” stack: +7% chance of a ×2 crit. Any strike involving him resets all stacks.'),
+
+    up: T('+2% шанса крита за стак прицеливания: 9% за стак.',
+      '+2% crit chance per Aiming stack: 9% per stack.'),
   },
 };
 
@@ -165,7 +204,7 @@ const STATS = [
 ];
 
 // все тексты данных — на текущем языке
-I18N.track(...HEROES, ...UPGRADES, ...INJURIES, ...Object.values(PASSIVES), ...Object.values(MODELS), ...STATS);
+I18N.track(...HEROES, ...UPGRADES, ...SPECIAL_UPGRADES, ...INJURIES, ...Object.values(PASSIVES), ...Object.values(MODELS), ...STATS);
 I18N.applyData();
 
 // Аватарка-кружок (лицо из спрайта)

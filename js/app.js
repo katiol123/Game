@@ -119,9 +119,11 @@ const App = (() => {
       const b0 = Math.min(1, (v - plus) / 20); // где кончается базовое значение — дальше идёт прокачка
       return `<div class="stat">
         <span class="st-name">${s.icon} ${s.name}</span>
-        <div class="bar"><i style="--v:${animate ? 0 : k}" data-v="${k}"></i>${plus
-          ? `<i class="bn" style="--b0:${b0};--v:${animate ? 0 : k}" data-v="${k}" title="${tr('Прокачка', 'Level-up bonus')} +${plus}"></i>` : ''}</div>
-        <b class="st-val" data-v="${v}">${animate ? 0 : v}</b><small>/20${plus ? ` <em class="st-bonus" title="${tr('Прокачка', 'Level-up bonus')}">(+${plus})</em>` : ''}</small>
+        <div class="bar"><i style="--v:${animate ? 0 : k}" data-v="${k}"></i>${plus > 0
+          ? `<i class="bn" style="--b0:${b0};--v:${animate ? 0 : k}" data-v="${k}" title="${tr('Прокачка', 'Level-up bonus')} +${plus}"></i>`
+          : plus < 0 ? `<i class="loss" style="left:${k * 100}%;width:${(b0 - k) * 100}%" title="${tr('Потеряно из-за травм', 'Lost to injuries')} ${plus}"></i>` : ''}</div>
+        <b class="st-val" data-v="${v}">${animate ? 0 : v}</b><small>/20${plus
+          ? ` <em class="st-bonus ${plus < 0 ? 'neg' : ''}" title="${tr('Прокачка и травмы', 'Level-ups and injuries')}">(${plus > 0 ? '+' : '−'}${Math.abs(plus)})</em>` : ''}</small>
       </div>`;
     }).join('')}</div>
     <div class="combat">
@@ -149,8 +151,12 @@ const App = (() => {
 
   function passiveBadge(h) {
     const ps = PASSIVES[h.id];
-    return `<div class="passive-badge"><span class="pb-icon">${ps.icon}</span>
-      <div><small>${tr('Пассивное умение', 'Passive ability')}</small><b>${ps.name}</b><p>${ps.desc}</p></div></div>`;
+    const picks = h.picks || [];
+    const up = picks.includes('empower');
+    const rage = picks.includes('rage');
+    return `<div class="passive-badge ${up ? 'up' : ''}"><span class="pb-icon">${ps.icon}</span>
+      <div><small>${tr('Пассивное умение', 'Passive ability')}${up ? ` · <em>⚡ ${tr('усилена', 'empowered')}</em>` : ''}</small><b>${ps.name}</b><p>${ps.desc}</p>
+      ${up ? `<p class="pb-up">⚡ ${ps.up}</p>` : ''}${rage ? `<p class="pb-up rage">🔥 ${UPGRADE_BY_ID.rage.name}: ${UPGRADE_BY_ID.rage.desc}</p>` : ''}</div></div>`;
   }
 
   function modelBadge(h) {
@@ -703,18 +709,24 @@ const App = (() => {
     });
   }
 
-  // Травмы, полученные в матче
-  function injuryLine(H, A, res) {
+  // Травмы, полученные в матче, и чем они ослабили бойцов
+  function injuryLine(H, A, res, lost = []) {
     const items = [];
     [H, A].forEach((h, i) => (res.injuries[i] || []).forEach((id) => {
       const inj = INJURY_BY_ID[id];
       const e = roster[h.id].injuries.find((x) => x.id === id);
       items.push(`<span style="--hc:${h.color}"><b>${h.name}</b>: ${inj.icon} ${inj.name}${e ? ` — ${e.left} ${boutsWord(e.left)}` : ''}</span>`);
     }));
-    return items.length ? `<div class="res-inj"><i>✚</i> ${tr('Травмы', 'Injuries')}: ${items.join('')}</div>` : '';
+    const weak = [H, A].map((h, i) => {
+      const l = lost[i];
+      if (!l) return '';
+      const parts = STATS.filter((st) => l[st.key]).map((st) => `${st.icon} ${st.name} −${l[st.key]}`);
+      return parts.length ? `<span class="res-weak" style="--hc:${h.color}"><b>${h.name}</b> ${tr('ослаб', 'weakened')}: ${parts.join(', ')}</span>` : '';
+    }).join('');
+    return items.length ? `<div class="res-inj"><i>✚</i> ${tr('Травмы', 'Injuries')}: ${items.join('')}${weak}</div>` : '';
   }
 
-  function showResult(H, A, res, last, xp = []) {
+  function showResult(H, A, res, last, xp = [], lost = []) {
     return new Promise((resolve) => {
       const o = League.outcome(res);
       const w = o === 'home' ? H : o === 'away' ? A : null;
@@ -731,7 +743,7 @@ const App = (() => {
           <span style="color:${A.color}">${A.name}</span>
         </div>
         <p class="res-sub">${tr('Очки за камни', 'Gem points')}: ${res.home} : ${res.away}</p>
-        ${injuryLine(H, A, res)}
+        ${injuryLine(H, A, res, lost)}
         ${xp.length ? xpRows(xp) : ''}
         <p class="countdown" id="resCount"></p>
         <button class="cta" id="resNext"><span>${last ? tr('К турнирной таблице', 'To the standings') : tr('Следующий матч', 'Next match')}</span></button>`;
@@ -800,8 +812,10 @@ const App = (() => {
       // травмы: старые сокращаются на бой, полученные в этом бою добавляются на 2–4 боя
       League.updateInjuries(roster[H.id], res.injuries[0]);
       League.updateInjuries(roster[A.id], res.injuries[1]);
+      // каждая полученная травма отнимает 2 очка случайных характеристик
+      const lost = [H, A].map((h, i) => League.injuryPenalty(roster[h.id], h.id, res.injuries[i].length));
       League.save(state);
-      await showResult(H, A, res, round.every((x) => x.result), xp);
+      await showResult(H, A, res, round.every((x) => x.result), xp, lost);
       await resolveLevelUps([H.id, A.id]);
     }
 
@@ -834,10 +848,11 @@ const App = (() => {
   function levelUpScreen(id) {
     return new Promise((resolve) => {
       const h = hero(id);
-      const cards = League.rollUpgrades(3);
+      const special = League.pickLevel(roster[id]) === SPECIAL_LEVEL;
+      const cards = League.cardsFor(roster[id], id);
       const human = h.isPlayer;
       const el = document.createElement('div');
-      el.className = 'lvlup';
+      el.className = 'lvlup' + (special ? ' special' : '');
       el.style.setProperty('--hc', h.color);
       el.innerHTML = `
         <div class="lu-rays"></div>
@@ -850,6 +865,7 @@ const App = (() => {
               <div class="lu-level">${tr('Уровень', 'Level')} <b>${h.level - h.pending + 1}</b></div>
             </div>
           </div>
+          ${special ? `<p class="lu-special">${tr('Особые карточки 4-го уровня', 'Special level 4 cards')}</p>` : ''}
           <p class="lu-hint">${human ? tr('Выберите улучшение', 'Choose an upgrade') : tr('ИИ выбирает улучшение…', 'AI is choosing an upgrade…')}</p>
           <div class="lu-cards">${cards.map((c, i) => {
             const cur = c.stat ? h.stats[c.stat] : null;

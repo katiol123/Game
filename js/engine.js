@@ -907,15 +907,13 @@ const Engine = (() => {
     return id === gameId;
   }
 
-  // Начисляет заряд на шкалу bar и проводит все накопленные атаки.
+  // Проводит все атаки, накопленные на шкале bar.
   // Порядок: шкала дозаполняется до 100% и вспыхивает → пауза → вылетает удар,
   // и в этот же момент шкала сбрасывается на остаток (излишек переходит на следующий удар).
-  async function chargeAndStrike(p, pts, bar = 0) {
+  async function strikeWhileFull(p, bar) {
     const id = gameId;
     const def = other(p);
     const el = chargeEl(p, bar);
-    p.charge[bar] += pts;
-    renderCharge(p, bar);
     while (p.charge[bar] >= p.cost && def.hp > 0) {
       await sleep(320); // шкала доезжает до 100%
       if (id !== gameId) return false;
@@ -1001,10 +999,15 @@ const Engine = (() => {
 
       // заряд начисляется в момент сжигания, параллельно с исчезновением и падением камней
       const targets = Combat.chargeTargets(p, combo, pts, scoreGroups(groups, Math.min(combo, 2)));
-      const charging = Promise.all(targets.map((t) => chargeAndStrike(p, t.pts, t.bar)));
+      // обе шкалы («Два ствола») заполняются сразу, удары идут по очереди
+      targets.forEach((t) => { p.charge[t.bar] += t.pts; renderCharge(p, t.bar); });
+      const charging = (async () => {
+        for (const t of targets) if (!(await strikeWhileFull(p, t.bar))) return false;
+        return true;
+      })();
       await animateClear(set);
       await animateGravity();
-      if ((await charging).includes(false) || id !== gameId) return null;
+      if (!(await charging) || id !== gameId) return null;
       if (someoneKO()) break;
       if (five && !(await onFive(p, five))) return null;
       if (someoneKO()) break;

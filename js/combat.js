@@ -38,9 +38,11 @@ const Combat = (() => {
 
   // Куда идут очки шага каскада: [{ bar, pts }].
   // pts — обычные очки шага, ptsCap — очки того же шага с множителем комбо не выше ×2.
+  // «Два ствола»: первая шкала заряжается как у всех, вторая — дополнительно от шагов с комбо ×2+.
   function chargeTargets(p, combo, pts, ptsCap) {
-    if (p.id === 'goose' && combo >= 2) return [{ bar: 1, pts: ptsCap }];
-    return [{ bar: 0, pts }];
+    const t = [{ bar: 0, pts }];
+    if (p.id === 'goose' && combo >= 2) t.push({ bar: 1, pts: ptsCap });
+    return t;
   }
 
   // Начало хода: сбрасываем «касание» и тикает кровотечение
@@ -78,8 +80,8 @@ const Combat = (() => {
       ev.dmg = dmg;
       def.hp = Math.max(0, def.hp - dmg);
       att.touched = def.touched = true;
-      // «Кровотечение»: 25% при попадании, до конца боя
-      if (att.id === 'frog' && !def.bleed && def.hp > 0 && rnd() < 0.25) { def.bleed = true; ev.bleedApplied = true; }
+      // «Кровотечение»: шанс (красные − 10) × 5 % при попадании, до конца боя
+      if (att.id === 'frog' && !def.bleed && def.hp > 0 && rnd() < Math.min(1, over10(g, GEM.red) * 0.05)) { def.bleed = true; ev.bleedApplied = true; }
     }
 
     // «Наручники»: каждая атака срезает процент накопленного заряда (со всех шкал)

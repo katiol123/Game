@@ -163,8 +163,8 @@ const PASSIVES = {
     icon: '🌯', name: T('Перекус', 'Snack Time'),
     desc: T('Когда каскад доходит до комбо ×4, Шаурмен лечится на 25 + (зелёных камней − 10) × 5 и получает стак: +15% шанса крита ×1,75 за каждый стак.',
       'When a cascade reaches combo ×4, Shawarman heals 25 + (green gems − 10) × 5 and gains a stack: +15% chance of a ×1.75 crit per stack.'),
-    up: T('Перекус лечит на 32 + (зелёных − 10) × 6.',
-      'Snack Time heals 32 + (green − 10) × 6.'),
+    up: T('Перекус лечит на 45 + (зелёных − 10) × 12.',
+      'Snack Time heals 45 + (green − 10) × 12.'),
   },
   sofa: {
     icon: '😐', name: T('Невозмутимость', 'Unbothered'),

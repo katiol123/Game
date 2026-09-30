@@ -855,6 +855,7 @@ const Engine = (() => {
     const opp = players.find((x) => x !== p);
     const luck = opp ? Combat.luckChance(p, opp) : 0;
     if (luck > 0) chips.push(`<span class="st-chip good" title="${UPGRADE_BY_ID.luck.desc}">🍀 ${Math.round(luck * 1000) / 10}%</span>`);
+    if (opp && Combat.furyActive(p, opp)) chips.push(`<span class="st-chip rage" title="${UPGRADE_BY_ID.fury.desc}">😤 +30%</span>`);
     const shield = opp ? Combat.shieldBlock(p, opp) : 0;
     if (shield > 0) chips.push(`<span class="st-chip good" title="${UPGRADE_BY_ID.shield.desc}">🛡️ ${shield}</span>`);
     if (p.bleed) chips.push(`<span class="st-chip bad" title="${tr('Кровотечение: в начале каждого хода (красных камней − 10) × 4 урона', 'Bleeding: (red gems − 10) × 4 damage at the start of each turn')}">🩸 ${tr('Истекает кровью', 'Bleeding')}</span>`);
@@ -982,7 +983,7 @@ const Engine = (() => {
       log(tr(`😐 <b>${def.hero.name}</b> даже не моргнул — удар${tag} ${att.hero.name} проигнорирован`, `😐 <b>${def.hero.name}</b> didn’t even blink: ${att.hero.name}’s strike${tag} ignored`), def.hero.color);
     } else {
       restartClass(def.el, 'hit');
-      const critTag = ev.crit ? (ev.luck ? tr('🍀 КРИТ! ', '🍀 CRIT! ') : tr('КРИТ! ', 'CRIT! ')) : '';
+      const critTag = (ev.fury ? '😤 ' : '') + (ev.crit ? (ev.luck ? tr('🍀 КРИТ! ', '🍀 CRIT! ') : tr('КРИТ! ', 'CRIT! ')) : '');
       cardPop(def, critTag + '−' + ev.dmg, ev.crit ? 'dmg crit' : 'dmg');
       renderHp(def);
       if (ev.ko) showKO(def, att); else Sound.play(ev.crit ? 'crit' : 'hit');
@@ -1397,6 +1398,15 @@ const Engine = (() => {
       animateIntro().then(() => {
         if (id !== gameId) return;
         banner(tr(`Первым ходит ${home.name}`, `${home.name} moves first`), home.color);
+        // «Родные стены»: +400 очков хозяину
+        const h0 = players[0];
+        if (h0.homeStart) {
+          cardPop(h0, `🏠 +${h0.homeStart}`, 'good', 300);
+          bumpScore(h0);
+          players.forEach(renderStatus);
+          renderDmg(h0);
+          log(tr(`🏠 <b>${h0.hero.name}</b>: родные стены — +${h0.homeStart} очков`, `🏠 <b>${h0.hero.name}</b>: home advantage, +${h0.homeStart} points`), h0.hero.color);
+        }
         Sound.play('whistle');
         return sleep(900);
       }).then(() => {

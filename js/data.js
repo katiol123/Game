@@ -93,6 +93,8 @@ const PERKS = {
   vamp: { over: 7, per: 3 },        // каждый попавший удар лечит на (фиолетовых − 7) × 3
   wind: { chance: 0.5 },            // раз за бой: смертельный урон — шанс 50% остаться с 1 здоровья
   momentum: { untilOpp: 1000 },     // «Кураж»: ярость со старта, пока соперник не наберёт 1000 очков
+  home: { points: 400 },            // «Родные стены»: +400 очков в начале домашнего боя
+  fury: { mult: 1.3 },              // «Праведный гнев»: +30% урона, пока у соперника больше текущего здоровья
 };
 const STAT_CARD_CHANCE = 0.3; // каждая из трёх карточек характеристик
 const RARE_CHANCE = 0.1;      // все редкие вместе
@@ -112,6 +114,10 @@ const RARE_UPGRADES = [
   { id: 'momentum', icon: '🎉', name: T('Кураж', 'Momentum'),
     desc: T('После сокрушительной победы следующий бой начинается в ярости — пока соперник не наберёт 1000 очков. Ярость не складывается с перком «Ярость»',
       'After a crushing win the next bout starts in a rage until the opponent scores 1000 points. Does not stack with the Rage perk') },
+  { id: 'home', icon: '🏠', name: T('Родные стены', 'Home Advantage'),
+    desc: T('В домашнем бою сразу получает +400 очков', 'Starts home bouts with +400 points') },
+  { id: 'fury', icon: '😤', name: T('Праведный гнев', 'Righteous Fury'),
+    desc: T('+30% урона, пока у соперника больше текущего здоровья, чем у героя', '+30% damage while the opponent has more current HP than the hero') },
 ].map((c) => ({ ...c, rare: true, apply: () => {} }));
 // Межсезонье: характеристика выше pivot теряет breakLoss («перерыв»), ниже pivot — получает restGain («отдых»),
 // плюс wear очков износа случайным характеристикам. Не ниже 1.

@@ -66,6 +66,8 @@ const Combat = (() => {
       secondWind: picks.includes('wind'),
       windUsed: false,
       momentum: !!hero.momentum && picks.includes('momentum'), // начинает бой «на кураже»
+      homeBonus: picks.includes('home'), // «Родные стены»
+      fury: picks.includes('fury'),      // «Праведный гнев»
       charge: hero.id === 'goose' ? [0, 0] : [0], // «Два ствола» — вторая шкала
       bleed: false,   // на бойце висит кровотечение (от Резака)
       bleedPer: 4,    // урон кровотечения за каждый красный камень сверх 10
@@ -91,6 +93,8 @@ const Combat = (() => {
   function matchStart(ps) {
     // «Кураж»: после сокрушительной победы бой начинается в ярости
     ps.forEach((p) => { if (p.momentum) startRage(p, 'momentum'); });
+    // «Родные стены»: хозяин боя (первый в паре) начинает с +400 очками
+    if (ps[0].homeBonus) { ps[0].score += PERKS.home.points; ps[0].homeStart = PERKS.home.points; }
     ps.forEach((p, i) => {
       if (!p.injuries.includes('teeth')) return;
       const opp = ps[1 - i];
@@ -136,12 +140,14 @@ const Combat = (() => {
   // 'ram' — «Таран», 'duel' — «Дуэль на закате»
   function hit(att, def, g, kind = 'charge', rnd = Math.random) {
     // фактический урон: базовый × КУ (зависит от набранных в бою очков); доли ударов пассивок — от него
-    const eff = att.dmg * dmgMult(att);
+    // «Праведный гнев»: +30% урона, пока у соперника больше текущего здоровья
+    const fury = furyActive(att, def);
+    const eff = att.dmg * dmgMult(att) * (fury ? PERKS.fury.mult : 1);
     let base = Math.max(1, Math.round(eff));
     if (kind === 'duel' && att.id !== 'dumpling') base = Math.ceil(eff * DUEL_ENEMY_FACTOR);
     if (kind === 'charge2') base = Math.ceil(eff * (upPassive(att, 'goose') ? TWO_BARRELS.dmgFactorUp : TWO_BARRELS.dmgFactor));
     if (kind === 'ram') base = Math.round(eff * (upPassive(att, 'cat') ? RAM.dmgUp : RAM.dmg));
-    const ev = { kind, base, dmg: 0, crit: false, missed: false, dodged: false, bleedApplied: false, drainPct: 0, aimLost: 0 };
+    const ev = { kind, base, dmg: 0, crit: false, missed: false, dodged: false, bleedApplied: false, drainPct: 0, aimLost: 0, fury };
     att.attacks++;
 
     // «Перелом руки»: (3 × красных камней)% шанс промахнуться — удар пропадает целиком
@@ -249,6 +255,8 @@ const Combat = (() => {
   // «Круглый щит»: за каждые 700 очков блокирует 10 урона, пока боец впереди по очкам, иначе 5
   const shieldBlock = (p, opp) => (p.shield
     ? Math.floor(p.score / PERKS.shield.step) * (p.score > opp.score ? PERKS.shield.per : PERKS.shield.perBehind) : 0);
+  // «Праведный гнев»: действует, пока у соперника больше текущего здоровья
+  const furyActive = (p, opp) => p.fury && opp.hp > p.hp;
   // «Второе дыхание»: раз за бой при смертельном уроне шанс 50% остаться с 1 здоровья
   function tryRevive(p, rnd = Math.random) {
     if (!p.secondWind || p.windUsed) return false;
@@ -301,6 +309,6 @@ const Combat = (() => {
 
   return {
     GEM, DUEL_MOVES, TWO_BARRELS, fighter, matchStart, comboMult, chargeTargets, startTurn,
-    duelOn, duelMoves, duelTurn, hit, dmgMult, curDmg, ramOnCombo, snackOnCombo, snack, checkRage, onScore, luckChance, shieldBlock, SNACK, endTurn, count, over10, hasInj, hasPassive, upPassive,
+    duelOn, duelMoves, duelTurn, hit, dmgMult, curDmg, furyActive, ramOnCombo, snackOnCombo, snack, checkRage, onScore, luckChance, shieldBlock, SNACK, endTurn, count, over10, hasInj, hasPassive, upPassive,
   };
 })();

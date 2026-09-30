@@ -17,12 +17,11 @@ const League = (() => {
     return b;
   }
 
-  // Характеристики героев фиксированы (data.js); модели ИИ раздаются случайно, но сбалансированно
+  // Характеристики и модели поведения ИИ героев фиксированы (data.js)
   function createRoster() {
-    const models = shuffle(['greedy', 'greedy', 'greedy', 'strategist', 'strategist', 'strategist', 'mystic', 'mystic']);
     const roster = {};
-    HEROES.forEach((h, i) => {
-      roster[h.id] = { model: models[i % models.length] };
+    HEROES.forEach((h) => {
+      roster[h.id] = { model: h.model };
       normalizeProgress(roster[h.id]);
     });
     return roster;
@@ -37,6 +36,7 @@ const League = (() => {
     if (!Array.isArray(e.picks)) e.picks = [];
     if (typeof e.pending !== 'number') e.pending = 0;
     if (!Array.isArray(e.injuries)) e.injuries = [];
+    if (typeof e.momentum !== 'boolean') e.momentum = false; // «Кураж» на следующий бой
     return e;
   }
 
@@ -94,10 +94,30 @@ const League = (() => {
   // Какой уровень герой сейчас «выбирает» (улучшения выбираются по порядку уровней)
   const pickLevel = (e) => e.level - e.pending + 1;
 
+  // 3 разные карточки. Каждая с шансом RARE_CHANCE — редкий перк (из ещё не взятых), иначе — карточка характеристики;
+  // так каждая из трёх карточек характеристик выпадает с шансом ~STAT_CARD_CHANCE, редкие вместе — RARE_CHANCE
+  function rollCards(e, n = 3) {
+    const rare = shuffle(RARE_UPGRADES.filter((c) => !e.picks.includes(c.id)));
+    const stats = shuffle(UPGRADES);
+    const out = [];
+    for (let k = 0; k < n; k++) {
+      if (rare.length && (Math.random() < RARE_CHANCE || !stats.length)) out.push(rare.pop());
+      else if (stats.length) out.push(stats.pop());
+    }
+    return out;
+  }
+
+  // ИИ выбирает редкую карточку в первую очередь, иначе — случайную
+  function aiPick(cards) {
+    const rare = cards.filter((c) => c.rare);
+    const from = rare.length ? rare : cards;
+    return from[Math.floor(Math.random() * from.length)];
+  }
+
   // Карточки для очередного выбора: на особом уровне — строго усиление своей пассивки, +2 ко всему и «Ярость»,
-  // на остальных — 3 случайные
+  // на остальных — 3 разные по шансам выпадения
   function cardsFor(e, id) {
-    if (pickLevel(e) !== SPECIAL_LEVEL) return rollUpgrades(3);
+    if (pickLevel(e) !== SPECIAL_LEVEL) return rollCards(e, 3);
     const ps = PASSIVES[id];
     return SPECIAL_UPGRADES.map((c) => (c.id === 'empower'
       ? { ...c, icon: ps.icon, name: `⚡ ${ps.name}`, desc: ps.up }
@@ -261,6 +281,7 @@ const League = (() => {
       const s = JSON.parse(localStorage.getItem(KEY));
       if (s && s.version === 1 && s.schedule && s.roster && HEROES.every((h) => s.roster[h.id])) {
         Object.values(s.roster).forEach(normalizeProgress); // старые сохранения — без прокачки
+        HEROES.forEach((h) => { s.roster[h.id].model = h.model; }); // модели ИИ теперь фиксированы
         return s;
       }
     } catch (e) { /* нет доступа к хранилищу */ }
@@ -273,5 +294,5 @@ const League = (() => {
     try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
   }
 
-  return { createRoster, updateInjuries, outcome, xpMultiplier, xpGain, addXp, rollUpgrades, cardsFor, pickLevel, injuryPenalty, applyUpgrade, bergerSchedule, create, offseason, nextSeason, standings, heroMatches, finished, load, save, clear };
+  return { createRoster, updateInjuries, outcome, xpMultiplier, xpGain, addXp, rollUpgrades, rollCards, aiPick, cardsFor, pickLevel, injuryPenalty, applyUpgrade, bergerSchedule, create, offseason, nextSeason, standings, heroMatches, finished, load, save, clear };
 })();

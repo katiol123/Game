@@ -56,6 +56,16 @@ const Combat = (() => {
       empowered: picks.includes('empower'), // усиленная пассивка (особая карточка уровня)
       rageReady: picks.includes('rage'),    // перк «Ярость»
       raging: false,
+      rageSrc: null,                        // откуда ярость: 'perk' (набрал очки) или 'momentum' («Кураж»)
+      baseStats: { ...hero.stats },         // характеристики до ярости
+      // редкие перки
+      luck: picks.includes('luck'),
+      bones: picks.includes('bones'),
+      shield: picks.includes('shield'),
+      vamp: picks.includes('vamp'),
+      secondWind: picks.includes('wind'),
+      windUsed: false,
+      momentum: !!hero.momentum && picks.includes('momentum'), // начинает бой «на кураже»
       charge: hero.id === 'goose' ? [0, 0] : [0], // «Два ствола» — вторая шкала
       bleed: false,   // на бойце висит кровотечение (от Резака)
       bleedPer: 4,    // урон кровотечения за каждый красный камень сверх 10
@@ -75,6 +85,8 @@ const Combat = (() => {
 
   // Начало матча: «Выбитые зубы» с прошлых боёв — соперник стартует с половиной заряда на всех шкалах
   function matchStart(ps) {
+    // «Кураж»: после сокрушительной победы бой начинается в ярости
+    ps.forEach((p) => { if (p.momentum) startRage(p, 'momentum'); });
     ps.forEach((p, i) => {
       if (!p.injuries.includes('teeth')) return;
       const opp = ps[1 - i];
@@ -103,6 +115,7 @@ const Combat = (() => {
     if (p.bleed && p.hp > 0) {
       r.bleed = over10(g, GEM.red) * p.bleedPer;
       if (r.bleed > 0) { p.hp = Math.max(0, p.hp - r.bleed); p.touched = true; }
+      if (p.hp <= 0 && tryRevive(p, rnd)) r.revived = true;
       r.ko = p.hp <= 0;
     }
     if (!r.ko && hasInj(p, 'concussion') && rnd() < Math.min(1, count(g, GEM.red) * 0.02)) r.skip = true;
@@ -130,10 +143,18 @@ const Combat = (() => {
       return ev;
     }
 
-    // криты: «Хедшот» (×2) и «Перекус» (×1,75)
+    // криты: «Хедшот» (×2), «Перекус» (×1,75) и перк «Удача» (×2). Шансы складываются, бросок один:
+    // сначала проверяется шанс пассивки (со своим множителем), сверху — шанс «Удачи»
     let mult = 1;
-    if (hasPassive(att, 'granny') && att.aim > 0 && rnd() < Math.min(1, att.aim * (upPassive(att, 'granny') ? 0.09 : 0.07))) { ev.crit = true; mult = 2; }
-    else if (hasPassive(att, 'shawarma') && att.snack > 0 && rnd() < Math.min(1, att.snack * (upPassive(att, 'shawarma') ? SNACK.critUp : SNACK.crit))) { ev.crit = true; mult = SNACK.critMult; }
+    let pc = 0, pm = 1;
+    if (hasPassive(att, 'granny') && att.aim > 0) { pc = att.aim * (upPassive(att, 'granny') ? 0.09 : 0.07); pm = 2; }
+    else if (hasPassive(att, 'shawarma') && att.snack > 0) { pc = att.snack * (upPassive(att, 'shawarma') ? SNACK.critUp : SNACK.crit); pm = SNACK.critMult; }
+    const lc = luckChance(att, def);
+    if (pc + lc > 0) {
+      const r = rnd();
+      if (r < pc) { ev.crit = true; mult = pm; }
+      else if (r < pc + lc) { ev.crit = true; mult = PERKS.luck.mult; ev.luck = true; }
+    }
 
     // «Невозмутимость»: шанс полностью проигнорировать удар
     const dodgeBase = SOFA_BASE_DODGE + (upPassive(def, 'sofa') ? 0.05 : 0);
@@ -141,7 +162,9 @@ const Combat = (() => {
 
     if (!ev.dodged) {
       // Травма определяется до расчёта урона: шанс выше при крите, тип — из тех, которых ещё нет
-      if (rnd() < (ev.crit ? INJURY_CRIT_CHANCE : INJURY_CHANCE)) {
+      // «Ярость» даёт иммунитет к травмам, «Твёрдые кости» вдвое снижают шанс
+      const injChance = (ev.crit ? INJURY_CRIT_CHANCE : INJURY_CHANCE) * (def.bones ? PERKS.bones.factor : 1);
+      if (!def.raging && rnd() < injChance) {
         const has = new Set([...def.injuries, ...def.newInjuries]);
         const free = INJURIES.filter((i) => !has.has(i.id));
         if (free.length) ev.injury = free[Math.floor(rnd() * free.length)].id;
@@ -150,8 +173,18 @@ const Combat = (() => {
       if (ev.injury === 'teeth') { mult = ev.crit ? 3 : 2; ev.crit = true; }
 
       ev.dmg = Math.round(base * mult);
+      // «Круглый щит»: блокирует часть урона, пока защитник впереди по очкам
+      const block = shieldBlock(def, att);
+      if (block > 0) { ev.blocked = Math.min(block, ev.dmg); ev.dmg -= ev.blocked; }
       def.hp = Math.max(0, def.hp - ev.dmg);
       att.touched = def.touched = true;
+      // «Вампиризм»: лечит на долю нанесённого урона
+      if (att.vamp && ev.dmg > 0 && att.hp > 0) {
+        ev.vamp = Math.max(0, Math.min(att.maxHp - att.hp, Math.round(ev.dmg * PERKS.vamp.share)));
+        att.hp += ev.vamp;
+      }
+      // «Второе дыхание»: смертельный удар — шанс остаться с 1 здоровья (раз за бой)
+      if (def.hp <= 0 && tryRevive(def, rnd)) ev.revived = true;
 
       if (ev.injury) {
         def.newInjuries.push(ev.injury);
@@ -195,11 +228,25 @@ const Combat = (() => {
     return { heal, snack: p.snack };
   }
 
-  // «Ярость»: набрав за бой RAGE_SCORE очков, боец получает +30% ко всем характеристикам (не выше 20) до конца боя.
-  // Вызывать после каждого начисления очков; возвращает { before, after } в момент срабатывания.
-  function checkRage(p) {
-    if (!p.rageReady || p.raging || p.score < RAGE_SCORE || p.hp <= 0) return null;
+  /* ---------- редкие перки ---------- */
+  // «Удача»: +7,5% шанса крита ×2 за каждую тысячу набранных очков, пока боец впереди по очкам
+  const luckChance = (p, opp) => (p.luck && p.score > opp.score ? Math.floor(p.score / 1000) * PERKS.luck.perK : 0);
+  // «Круглый щит»: блокирует 10 урона за каждую тысячу очков, пока боец впереди по очкам
+  const shieldBlock = (p, opp) => (p.shield && p.score > opp.score ? Math.floor(p.score / 1000) * PERKS.shield.perK : 0);
+  // «Второе дыхание»: раз за бой при смертельном уроне шанс 50% остаться с 1 здоровья
+  function tryRevive(p, rnd = Math.random) {
+    if (!p.secondWind || p.windUsed) return false;
+    p.windUsed = true;
+    if (rnd() >= PERKS.wind.chance) return false;
+    p.hp = 1;
+    return true;
+  }
+
+  // «Ярость»: +30% ко всем характеристикам (не выше 20) и иммунитет к травмам.
+  // src: 'perk' — набрал RAGE_SCORE очков (до конца боя), 'momentum' — «Кураж» (пока соперник не наберёт 1000).
+  function startRage(p, src) {
     p.raging = true;
+    p.rageSrc = src;
     const before = { ...p.stats };
     for (const k of Object.keys(p.stats)) {
       const s = p.stats[k];
@@ -209,6 +256,27 @@ const Combat = (() => {
     return { before, after: { ...p.stats } };
   }
 
+  // Вызывать после каждого начисления очков бойцу p (соперник opp):
+  //   { rage } — p впал в ярость от перка; { converted } — ярость «Куража» теперь держится перком до конца боя;
+  //   { rageEnd } — у opp закончилась ярость «Куража» (p набрал 1000 очков)
+  function onScore(p, opp) {
+    const out = {};
+    if (p.rageReady && p.score >= RAGE_SCORE && p.hp > 0 && p.rageSrc !== 'perk') {
+      if (p.raging) { p.rageSrc = 'perk'; out.converted = true; } // ярость не стакается
+      else out.rage = startRage(p, 'perk');
+    }
+    if (opp && opp.raging && opp.rageSrc === 'momentum' && p.score >= PERKS.momentum.untilOpp) {
+      opp.raging = false;
+      opp.rageSrc = null;
+      opp.stats = { ...opp.baseStats };
+      refresh(opp);
+      out.rageEnd = opp;
+    }
+    return out;
+  }
+  // совместимость: только ярость от перка
+  const checkRage = (p) => onScore(p, null).rage || null;
+
   // Конец хода: «Прицеливание» за ход без урона
   function endTurn(p) {
     if (hasPassive(p, 'granny') && !p.touched && p.hp > 0) { p.aim++; return { aim: p.aim }; }
@@ -217,6 +285,6 @@ const Combat = (() => {
 
   return {
     GEM, DUEL_MOVES, TWO_BARRELS, fighter, matchStart, comboMult, chargeTargets, startTurn,
-    duelOn, duelMoves, duelTurn, hit, ramOnCombo, snackOnCombo, snack, checkRage, SNACK, endTurn, count, over10, hasInj, hasPassive, upPassive,
+    duelOn, duelMoves, duelTurn, hit, ramOnCombo, snackOnCombo, snack, checkRage, onScore, luckChance, shieldBlock, SNACK, endTurn, count, over10, hasInj, hasPassive, upPassive,
   };
 })();

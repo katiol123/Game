@@ -776,6 +776,7 @@ const Engine = (() => {
       el.querySelector('.hp-max').textContent = p.maxHp;
       el.querySelector('.charge.c2').hidden = p.charge.length < 2;
       el.classList.remove('ko', 'hit', 'lunge', 'injured', 'raging');
+      if (p.raging) el.classList.add('raging'); // «Кураж»: ярость с первого хода
       el.querySelectorAll('.inj-stamp').forEach((x) => x.remove());
       el.querySelectorAll('.card-pop').forEach((x) => x.remove());
       p.el = el;
@@ -833,8 +834,14 @@ const Engine = (() => {
       : p.empowered
         ? `<span class="st-chip passive up" title="${ps.desc}\n⚡ ${ps.up}">${ps.icon} ${ps.name} ⚡</span>`
         : `<span class="st-chip passive" title="${ps.desc}">${ps.icon} ${ps.name}</span>`];
-    if (p.raging) chips.push(`<span class="st-chip rage" title="${UPGRADE_BY_ID.rage.desc}">🔥 ${tr('Ярость', 'Rage')}</span>`);
+    if (p.raging && p.rageSrc === 'momentum') chips.push(`<span class="st-chip rage" title="${UPGRADE_BY_ID.momentum.desc}">🎉 ${tr('Кураж', 'Momentum')}</span>`);
+    else if (p.raging) chips.push(`<span class="st-chip rage" title="${UPGRADE_BY_ID.rage.desc}">🔥 ${tr('Ярость', 'Rage')}</span>`);
     else if (p.rageReady) chips.push(`<span class="st-chip" title="${UPGRADE_BY_ID.rage.desc}">🔥 ${Math.min(p.score, RAGE_SCORE)} / ${RAGE_SCORE}</span>`);
+    const opp = players.find((x) => x !== p);
+    const luck = opp ? Combat.luckChance(p, opp) : 0;
+    if (luck > 0) chips.push(`<span class="st-chip good" title="${UPGRADE_BY_ID.luck.desc}">🍀 ${Math.round(luck * 1000) / 10}%</span>`);
+    const shield = opp ? Combat.shieldBlock(p, opp) : 0;
+    if (shield > 0) chips.push(`<span class="st-chip good" title="${UPGRADE_BY_ID.shield.desc}">🛡️ ${shield}</span>`);
     if (p.bleed) chips.push(`<span class="st-chip bad" title="${tr('Кровотечение: в начале каждого хода (красных камней − 10) × 4 урона', 'Bleeding: (red gems − 10) × 4 damage at the start of each turn')}">🩸 ${tr('Истекает кровью', 'Bleeding')}</span>`);
     if (p.aim) chips.push(`<span class="st-chip good" title="${tr(`Прицеливание: ${p.aim * 7}% шанс крита ×2`, `Aiming: ${p.aim * 7}% chance of a ×2 crit`)}">🎯 ×${p.aim}</span>`);
     if (p.snack) chips.push(`<span class="st-chip good" title="${tr(`Перекус: ${Math.round(p.snack * (p.empowered ? Combat.SNACK.critUp : Combat.SNACK.crit) * 100)}% шанс крита ×1,75`, `Snack Time: ${Math.round(p.snack * (p.empowered ? Combat.SNACK.critUp : Combat.SNACK.crit) * 100)}% chance of a ×1.75 crit`)}">🌯 ×${p.snack}</span>`);
@@ -898,6 +905,28 @@ const Engine = (() => {
     log(tr(`🔥 <b>${p.hero.name}</b> впадает в ярость: ${diff}`, `🔥 <b>${p.hero.name}</b> flies into a rage: ${diff}`), '#ff5a1f');
   }
 
+  // Ярость «Куража» закончилась: соперник набрал 1000 очков
+  function showRageEnd(p) {
+    p.el.classList.remove('raging');
+    cardPop(p, tr('🎉 Кураж прошёл', '🎉 Momentum over'), 'info');
+    p.el.querySelector('.dmg').textContent = p.dmg;
+    p.el.querySelector('.hp-max').textContent = p.maxHp;
+    renderHp(p);
+    p.charge.forEach((_, b) => renderCharge(p, b, true));
+    renderStatus(p);
+    log(tr(`🎉 <b>${p.hero.name}</b>: кураж прошёл — соперник набрал 1000 очков`, `🎉 <b>${p.hero.name}</b>: momentum is over, the opponent scored 1000 points`), p.hero.color);
+  }
+
+  // «Второе дыхание»: остался с 1 здоровья
+  function showRevive(p) {
+    p.el.classList.remove('ko');
+    banner(tr('Второе дыхание!', 'Second Wind!'), p.hero.color);
+    cardPop(p, '💨 1 ❤', 'heal', 300);
+    Sound.play('heal');
+    renderHp(p);
+    log(tr(`💨 <b>${p.hero.name}</b> открывает второе дыхание и остаётся с 1 здоровья`, `💨 <b>${p.hero.name}</b> gets a second wind and stays at 1 HP`), p.hero.color);
+  }
+
   function showKO(def, att) {
     def.el.classList.add('ko');
     Sound.play('ko');
@@ -938,11 +967,21 @@ const Engine = (() => {
       log(tr(`😐 <b>${def.hero.name}</b> даже не моргнул — удар${tag} ${att.hero.name} проигнорирован`, `😐 <b>${def.hero.name}</b> didn’t even blink: ${att.hero.name}’s strike${tag} ignored`), def.hero.color);
     } else {
       restartClass(def.el, 'hit');
-      cardPop(def, (ev.crit ? tr('КРИТ! ', 'CRIT! ') : '') + '−' + ev.dmg, ev.crit ? 'dmg crit' : 'dmg');
+      const critTag = ev.crit ? (ev.luck ? tr('🍀 КРИТ! ', '🍀 CRIT! ') : tr('КРИТ! ', 'CRIT! ')) : '';
+      cardPop(def, critTag + '−' + ev.dmg, ev.crit ? 'dmg crit' : 'dmg');
       renderHp(def);
       if (ev.ko) showKO(def, att); else Sound.play(ev.crit ? 'crit' : 'hit');
-      log(tr(`⚔ <b>${att.hero.name}</b> бьёт${tag} на ${ev.dmg}${ev.crit ? ' — КРИТ!' : ''} — у соперника ❤ ${def.hp}`,
-        `⚔ <b>${att.hero.name}</b> hits${tag} for ${ev.dmg}${ev.crit ? ' (CRIT!)' : ''}; opponent ❤ ${def.hp}`), att.hero.color);
+      log(tr(`⚔ <b>${att.hero.name}</b> бьёт${tag} на ${ev.dmg}${ev.crit ? (ev.luck ? ' — КРИТ удачи!' : ' — КРИТ!') : ''} — у соперника ❤ ${def.hp}`,
+        `⚔ <b>${att.hero.name}</b> hits${tag} for ${ev.dmg}${ev.crit ? (ev.luck ? ' (lucky CRIT!)' : ' (CRIT!)') : ''}; opponent ❤ ${def.hp}`), att.hero.color);
+      if (ev.blocked) {
+        cardPop(def, tr(`🛡️ −${ev.blocked} заблокировано`, `🛡️ ${ev.blocked} blocked`), 'info', 200);
+        log(tr(`🛡️ <b>${def.hero.name}</b> блокирует щитом ${ev.blocked} урона`, `🛡️ <b>${def.hero.name}</b> blocks ${ev.blocked} damage with the shield`), def.hero.color);
+      }
+      if (ev.vamp) {
+        cardPop(att, `🧛 +${ev.vamp} ❤`, 'heal', 150);
+        renderHp(att);
+      }
+      if (ev.revived) showRevive(def);
     }
     if (ev.bleedApplied) {
       cardPop(def, tr('🩸 Кровотечение!', '🩸 Bleeding!'), 'bad', 250);
@@ -1049,9 +1088,11 @@ const Engine = (() => {
       p.score += pts;
       p.maxCombo = Math.max(p.maxCombo, combo);
       bumpScore(p);
-      const rage = Combat.checkRage(p);
-      if (rage) showRage(p, rage);
-      else if (p.rageReady && !p.raging) renderStatus(p); // прогресс до «Ярости»
+      const sc = Combat.onScore(p, other(p));
+      if (sc.rage) showRage(p, sc.rage);
+      if (sc.converted) log(tr(`🔥 <b>${p.hero.name}</b>: ярость теперь до конца боя`, `🔥 <b>${p.hero.name}</b>: the rage now lasts until the end of the bout`), '#ff5a1f');
+      if (sc.rageEnd) showRageEnd(sc.rageEnd);
+      players.forEach(renderStatus); // прогресс до «Ярости», «Удача» и «Щит» зависят от очков
 
       let sx = 0, sy = 0;
       for (const i of set) { sx += px(i % COLS); sy += px((i / COLS) | 0); }
@@ -1104,6 +1145,7 @@ const Engine = (() => {
         renderHp(p);
         Sound.play('hit');
         log(tr(`🩸 <b>${p.hero.name}</b> теряет ${st.bleed} от кровотечения — ❤ ${p.hp}`, `🩸 <b>${p.hero.name}</b> loses ${st.bleed} to bleeding; ❤ ${p.hp}`), def.hero.color);
+        if (st.revived) showRevive(p);
         if (st.ko) { showKO(p, def); continue; }
         await sleep(450);
         if (id !== gameId) return;
@@ -1249,7 +1291,7 @@ const Engine = (() => {
       g = s.grid;
       for (const step of s.steps) {
         p.score += step.base * Combat.comboMult(p, step.combo);
-        Combat.checkRage(p);
+        Combat.onScore(p, def);
         for (const tg of Combat.chargeTargets(p, step.combo, step.base)) {
           p.charge[tg.bar] += tg.pts;
           while (p.charge[tg.bar] >= p.cost && def.hp > 0) { p.charge[tg.bar] -= p.cost; Combat.hit(p, def, g, tg.bar ? 'charge2' : 'charge'); }

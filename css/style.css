@@ -173,6 +173,13 @@ button:disabled { opacity: 0.45; cursor: default; transform: none; }
 .uc-icon { font-size: 40px; line-height: 1.1; }
 .up-card b { font-family: var(--display); font-weight: 400; font-size: 20px; }
 .up-card small { color: var(--muted); font-size: 13px; }
+/* редкая карточка: золотисто-фиолетовое свечение и метка */
+.up-card.rare { position: relative; border-color: #ffcf5a;
+  box-shadow: 0 0 0 1px rgba(255, 207, 90, 0.6), 0 0 22px rgba(255, 190, 60, 0.45), inset 0 0 26px rgba(180, 90, 255, 0.18);
+  animation: cardFlip 0.6s cubic-bezier(.2, 1.3, .4, 1) calc(0.25s + var(--i) * 0.15s) backwards, rareGlow 2.2s ease-in-out infinite; }
+@keyframes rareGlow { 50% { box-shadow: 0 0 0 1px rgba(255, 207, 90, 0.9), 0 0 34px rgba(255, 190, 60, 0.7), inset 0 0 34px rgba(180, 90, 255, 0.3); } }
+.uc-rare { position: absolute; top: 8px; right: 10px; font-style: normal; font-size: 10px; font-weight: 800; letter-spacing: 1.5px;
+  text-transform: uppercase; color: #ffcf5a; text-shadow: 0 0 8px rgba(255, 190, 60, 0.8); }
 .up-card em { font-style: normal; font-weight: 900; color: #3ddc84; margin-top: 4px; }
 .up-card.chosen { transform: translateY(-10px) scale(1.08); box-shadow: 0 0 0 3px #ffd21f, 0 0 36px rgba(255, 210, 31, 0.6); }
 .up-card.faded { opacity: 0.3; filter: grayscale(0.8); transform: scale(0.94); }

@@ -15,21 +15,21 @@ const FACES = {
 
 const HEROES = [
   { id: 'frog', name: T('Резак', 'Razor'), title: T('Два ножа, ноль спокойствия', 'Two knives, zero chill'), color: '#5fd35f',
-    stats: { str: 6, agi: 16, end: 10 } },
+    stats: { str: 6, agi: 16, end: 10 }, model: 'greedy' },
   { id: 'granny', name: T('Дед Отмороз', 'Santa Psycho'), title: T('Подарки с доставкой в голову', 'Gifts delivered straight to your head'), color: '#ff5f6d',
-    stats: { str: 15, agi: 5, end: 8 } },
+    stats: { str: 15, agi: 5, end: 8 }, model: 'mystic' },
   { id: 'sofa', name: T('Чэд Чилингтон', 'Chad Chillington'), title: T('Абсолютный ноль эмоций', 'Absolute zero emotions'), color: '#ff9f43',
-    stats: { str: 6, agi: 13, end: 6 } },
+    stats: { str: 6, agi: 13, end: 6 }, model: 'strategist' },
   { id: 'goose', name: T('Кинг-Банг', 'King Bang'), title: T('Банановые пистолеты заряжены, спелы и абсолютно незаконны', 'Banana pistols: loaded, ripe and totally illegal'), color: '#3fd9ff',
-    stats: { str: 7, agi: 10, end: 10 } },
+    stats: { str: 7, agi: 10, end: 10 }, model: 'greedy' },
   { id: 'plumber', name: T('Офицер Хэртли', 'Officer Hartley'), title: T('Три в ряд — это уже группа лиц', 'Three in a row is already a gang'), color: '#5b7cff',
-    stats: { str: 12, agi: 6, end: 16 } },
+    stats: { str: 12, agi: 6, end: 16 }, model: 'strategist' },
   { id: 'dumpling', name: T('Ковбой Пыль', 'Cowboy Dust'), title: T('Самый медленный ствол Дикого Запада', 'Slowest gun in the Wild West'), color: '#ff8fd8',
-    stats: { str: 12, agi: 1, end: 12 } },
+    stats: { str: 12, agi: 1, end: 12 }, model: 'strategist' },
   { id: 'cat', name: T('Генерал Бычара', 'General Bullrush'), title: T('Прёт напролом', 'Charges straight through'), color: '#b06bff',
-    stats: { str: 15, agi: 5, end: 16 } },
+    stats: { str: 15, agi: 5, end: 16 }, model: 'greedy' },
   { id: 'shawarma', name: T('Шаурмен', 'Shawarman'), title: T('Завёрнут и опасен', 'Wrapped and dangerous'), color: '#ffd93d',
-    stats: { str: 11, agi: 12, end: 7 } },
+    stats: { str: 11, agi: 12, end: 7 }, model: 'mystic' },
 ].map((h) => ({ sprite: `assets/heroes/${h.id}.png`, face: { size: 500, ...FACES[h.id] }, ...h }));
 
 /*
@@ -77,17 +77,47 @@ const SPECIAL_UPGRADES = [
   { id: 'all', icon: '🌟', name: T('Всё и сразу', 'All-rounder'), desc: T('+2 к силе, ловкости и выносливости', '+2 Strength, Agility and Endurance'),
     apply: (prog) => { prog.bonus.str += 2; prog.bonus.agi += 2; prog.bonus.end += 2; } },
   { id: 'rage', icon: '🔥', name: T('Ярость', 'Rage'),
-    desc: T(`Набрав за бой ${RAGE_SCORE} очков, впадает в ярость: все характеристики +30% (не выше 20) до конца боя`,
-      `After scoring ${RAGE_SCORE} points in a bout, flies into a rage: all attributes +30% (max 20) until the end of the bout`),
+    desc: T(`Набрав за бой ${RAGE_SCORE} очков, впадает в ярость: все характеристики +30% (не выше 20) и иммунитет к травмам до конца боя`,
+      `After scoring ${RAGE_SCORE} points in a bout, flies into a rage: all attributes +30% (max 20) and immunity to injuries until the end of the bout`),
     apply: () => {} },
 ];
+
+// Редкие перки (шанс выпадения — RARE_CHANCE на каждую карточку, поровну между доступными; ИИ берёт их в первую очередь).
+// Каждый перк можно получить только один раз.
+const PERKS = {
+  luck: { perK: 0.075, mult: 2 },   // +7,5% шанса крита ×2 за каждую тысячу очков, если впереди по очкам
+  bones: { factor: 0.5 },           // шанс получить травму ×0,5
+  shield: { perK: 10 },             // блок 10 урона за каждую тысячу очков, если впереди по очкам
+  vamp: { share: 0.15 },            // лечение 15% от нанесённого урона
+  wind: { chance: 0.5 },            // раз за бой: смертельный урон — шанс 50% остаться с 1 здоровья
+  momentum: { untilOpp: 1000 },     // «Кураж»: ярость со старта, пока соперник не наберёт 1000 очков
+};
+const STAT_CARD_CHANCE = 0.3; // каждая из трёх карточек характеристик
+const RARE_CHANCE = 0.1;      // все редкие вместе
+const RARE_UPGRADES = [
+  { id: 'luck', icon: '🍀', name: T('Удача', 'Luck'),
+    desc: T('+7,5% шанса крита ×2 за каждую тысячу очков в бою, пока набрано больше, чем у соперника',
+      '+7.5% chance of a ×2 crit per thousand points in the bout while ahead of the opponent on points') },
+  { id: 'bones', icon: '🦴', name: T('Твёрдые кости', 'Hard Bones'),
+    desc: T('Шанс получить травму вдвое меньше', 'Half the chance to get injured') },
+  { id: 'shield', icon: '🛡️', name: T('Круглый щит', 'Round Shield'),
+    desc: T('Блокирует 10 урона от каждого удара за каждую тысячу очков в бою, пока набрано больше, чем у соперника',
+      'Blocks 10 damage from each strike per thousand points in the bout while ahead of the opponent on points') },
+  { id: 'vamp', icon: '🧛', name: T('Вампиризм', 'Vampirism'),
+    desc: T('Лечит на 15% от нанесённого урона', 'Heals 15% of the damage dealt') },
+  { id: 'wind', icon: '💨', name: T('Второе дыхание', 'Second Wind'),
+    desc: T('Раз за бой: получив смертельный урон, с шансом 50% остаётся с 1 здоровья', 'Once per bout: on lethal damage, 50% chance to survive with 1 HP') },
+  { id: 'momentum', icon: '🎉', name: T('Кураж', 'Momentum'),
+    desc: T('После сокрушительной победы следующий бой начинается в ярости — пока соперник не наберёт 1000 очков. Ярость не складывается с перком «Ярость»',
+      'After a crushing win the next bout starts in a rage until the opponent scores 1000 points. Does not stack with the Rage perk') },
+].map((c) => ({ ...c, rare: true, apply: () => {} }));
 // Межсезонье: характеристика выше pivot теряет breakLoss («перерыв»), ниже pivot — получает restGain («отдых»),
 // плюс wear очков износа случайным характеристикам. Не ниже 1.
 const OFFSEASON = { pivot: 10, breakLoss: 1, restGain: 1, wear: 2 };
 const romanNum = (n) => [['X', 10], ['IX', 9], ['V', 5], ['IV', 4], ['I', 1]]
   .reduce((acc, [r, v]) => { while (n >= v) { acc.s += r; n -= v; } return acc; }, { s: '' }).s;
 
-const UPGRADE_BY_ID = Object.fromEntries([...UPGRADES, ...SPECIAL_UPGRADES].map((u) => [u.id, u]));
+const UPGRADE_BY_ID = Object.fromEntries([...UPGRADES, ...SPECIAL_UPGRADES, ...RARE_UPGRADES].map((u) => [u.id, u]));
 
 /*
  * Травмы. Шанс при пропущенном ударе: 3%, при критическом — 33%.
@@ -211,7 +241,7 @@ const STATS = [
 ];
 
 // все тексты данных — на текущем языке
-I18N.track(...HEROES, ...UPGRADES, ...SPECIAL_UPGRADES, ...INJURIES, ...Object.values(PASSIVES), ...Object.values(MODELS), ...STATS);
+I18N.track(...HEROES, ...UPGRADES, ...SPECIAL_UPGRADES, ...RARE_UPGRADES, ...INJURIES, ...Object.values(PASSIVES), ...Object.values(MODELS), ...STATS);
 I18N.applyData();
 
 // Аватарка-кружок (лицо из спрайта)

@@ -831,6 +831,11 @@ const App = (() => {
       League.updateInjuries(roster[A.id], res.injuries[1]);
       // каждая полученная травма отнимает 2 очка случайных характеристик
       const lost = [H, A].map((h, i) => League.injuryPenalty(roster[h.id], h.id, res.injuries[i].length));
+      // «Кураж»: сокрушительная победа — следующий бой начнётся в ярости (действует один бой)
+      [[H, 'home'], [A, 'away']].forEach(([h, side]) => {
+        const e = roster[h.id];
+        e.momentum = !!res.crush && res.winner === side && e.picks.includes('momentum');
+      });
       League.save(state);
       await showResult(H, A, res, round.every((x) => x.result), xp, lost);
       await resolveLevelUps([H.id, A.id]);
@@ -861,7 +866,7 @@ const App = (() => {
    *  Новый уровень: выбор одной из трёх карточек улучшений
    * ------------------------------------------------------- */
   // ИИ выбирает карточку случайно
-  const aiPick = (cards) => cards[Math.floor(Math.random() * cards.length)];
+  const aiPick = League.aiPick; // редкие карточки — в первую очередь
 
   function levelUpScreen(id) {
     return new Promise((resolve) => {
@@ -887,7 +892,8 @@ const App = (() => {
           <p class="lu-hint">${human ? tr('Выберите улучшение', 'Choose an upgrade') : tr('ИИ выбирает улучшение…', 'AI is choosing an upgrade…')}</p>
           <div class="lu-cards">${cards.map((c, i) => {
             const cur = c.stat ? h.stats[c.stat] : null;
-            return `<button class="up-card" data-i="${i}" style="--i:${i}" ${human ? '' : 'disabled'}>
+            return `<button class="up-card ${c.rare ? 'rare' : ''}" data-i="${i}" style="--i:${i}" ${human ? '' : 'disabled'}>
+              ${c.rare ? `<i class="uc-rare">${tr('Редкая', 'Rare')}</i>` : ''}
               <span class="uc-icon">${c.icon}</span><b>${c.name}</b><small>${c.desc}</small>
               ${cur !== null ? `<em>${cur} → ${cur + (c.amount || 1)}</em>` : ''}
             </button>`;

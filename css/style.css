@@ -599,6 +599,7 @@ canvas { display: block; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0,
   background: rgba(13, 11, 36, 0.8); border: 1px solid color-mix(in srgb, var(--pc) 55%, transparent);
   box-shadow: 0 0 12px color-mix(in srgb, var(--pc) 35%, transparent); }
 .dmg-badge b { font-family: var(--display); font-weight: 400; font-size: 17px; color: #fff; font-variant-numeric: tabular-nums; }
+.dmg-badge .dmg-calc { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* ---------- травмы ---------- */
 .inj { position: relative; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; font-style: normal;
   font-size: 15px; font-weight: 900; line-height: 1; color: #fff; background: linear-gradient(180deg, #ff4b5c, #c0102a);

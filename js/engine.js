@@ -772,7 +772,6 @@ const Engine = (() => {
       el.querySelector('.side').textContent = i === 0 ? tr('Дома', 'Home') : tr('В гостях', 'Away');
       el.querySelector('.you').hidden = !h.isPlayer;
       el.querySelector('.score').textContent = '0';
-      el.querySelector('.dmg').textContent = p.dmg;
       el.querySelector('.hp-max').textContent = p.maxHp;
       el.querySelector('.charge.c2').hidden = p.charge.length < 2;
       el.classList.remove('ko', 'hit', 'lunge', 'injured', 'raging');
@@ -785,6 +784,7 @@ const Engine = (() => {
       if (p.charge.length > 1) renderCharge(p, 1, true);
       renderStatus(p);
       renderInjuries(p);
+      renderDmg(p);
     });
     $('matchInfo').textContent = info || '';
     $('log').innerHTML = '';
@@ -824,6 +824,14 @@ const Engine = (() => {
     fill.style.width = Math.min(1, p.charge[bar] / p.cost) * 100 + '%';
     el.querySelector('.charge-txt').textContent = `${Math.min(p.charge[bar], p.cost)} / ${p.cost}`;
     if (instant) { void fill.offsetWidth; fill.style.transition = ''; }
+  }
+
+  // Урон за удар: фактический и (базовый × КУ)
+  function renderDmg(p) {
+    const k = Combat.dmgMult(p);
+    const kTxt = (Math.round(k * 100) / 100).toString().replace('.', tr(',', '.'));
+    p.el.querySelector('.dmg').textContent = Combat.curDmg(p);
+    p.el.querySelector('.dmg-calc').textContent = `(${p.dmg}×${kTxt})`;
   }
 
   // Пассивка и текущие эффекты под именем бойца
@@ -896,7 +904,7 @@ const Engine = (() => {
     banner(tr('ЯРОСТЬ!', 'RAGE!'), '#ff5a1f');
     Sound.play('crit');
     cardPop(p, '🔥 +30%', 'crit');
-    p.el.querySelector('.dmg').textContent = p.dmg;
+    renderDmg(p);
     p.el.querySelector('.hp-max').textContent = p.maxHp;
     renderHp(p);
     p.charge.forEach((_, b) => renderCharge(p, b, true));
@@ -909,7 +917,7 @@ const Engine = (() => {
   function showRageEnd(p) {
     p.el.classList.remove('raging');
     cardPop(p, tr('🎉 Кураж прошёл', '🎉 Momentum over'), 'info');
-    p.el.querySelector('.dmg').textContent = p.dmg;
+    renderDmg(p);
     p.el.querySelector('.hp-max').textContent = p.maxHp;
     renderHp(p);
     p.charge.forEach((_, b) => renderCharge(p, b, true));
@@ -1093,6 +1101,7 @@ const Engine = (() => {
       if (sc.converted) log(tr(`🔥 <b>${p.hero.name}</b>: ярость теперь до конца боя`, `🔥 <b>${p.hero.name}</b>: the rage now lasts until the end of the bout`), '#ff5a1f');
       if (sc.rageEnd) showRageEnd(sc.rageEnd);
       players.forEach(renderStatus); // прогресс до «Ярости», «Удача» и «Щит» зависят от очков
+      renderDmg(p); // КУ растёт с очками
 
       let sx = 0, sy = 0;
       for (const i of set) { sx += px(i % COLS); sy += px((i / COLS) | 0); }
@@ -1333,7 +1342,7 @@ const Engine = (() => {
     players.forEach((p) => {
       renderInjuries(p);
       p.el.classList.toggle('raging', p.raging);
-      p.el.querySelector('.dmg').textContent = p.dmg;
+      renderDmg(p);
       p.el.querySelector('.hp-max').textContent = p.maxHp;
       renderHp(p);
       p.charge.forEach((_, b) => renderCharge(p, b));

@@ -131,10 +131,12 @@ const Combat = (() => {
   // Удар att по def. kind: 'charge' — от шкалы, 'charge2' — от второй шкалы «Двух стволов»,
   // 'ram' — «Таран», 'duel' — «Дуэль на закате»
   function hit(att, def, g, kind = 'charge', rnd = Math.random) {
-    let base = att.dmg;
-    if (kind === 'duel' && att.id !== 'dumpling') base = Math.ceil(att.dmg * DUEL_ENEMY_FACTOR);
-    if (kind === 'charge2') base = Math.ceil(att.dmg * (upPassive(att, 'goose') ? TWO_BARRELS.dmgFactorUp : TWO_BARRELS.dmgFactor));
-    if (kind === 'ram') base = Math.round(att.dmg * (upPassive(att, 'cat') ? RAM.dmgUp : RAM.dmg));
+    // фактический урон: базовый × КУ (зависит от набранных в бою очков); доли ударов пассивок — от него
+    const eff = att.dmg * dmgMult(att);
+    let base = Math.max(1, Math.round(eff));
+    if (kind === 'duel' && att.id !== 'dumpling') base = Math.ceil(eff * DUEL_ENEMY_FACTOR);
+    if (kind === 'charge2') base = Math.ceil(eff * (upPassive(att, 'goose') ? TWO_BARRELS.dmgFactorUp : TWO_BARRELS.dmgFactor));
+    if (kind === 'ram') base = Math.round(eff * (upPassive(att, 'cat') ? RAM.dmgUp : RAM.dmg));
     const ev = { kind, base, dmg: 0, crit: false, missed: false, dodged: false, bleedApplied: false, drainPct: 0, aimLost: 0 };
 
     // «Перелом руки»: (3 × красных камней)% шанс промахнуться — удар пропадает целиком
@@ -228,6 +230,12 @@ const Combat = (() => {
     return { heal, snack: p.snack };
   }
 
+  /* ---------- динамический урон ---------- */
+  // КУ — коэффициент усиления урона: очки в бою / DYN_DMG.per, но не меньше DYN_DMG.min
+  const dmgMult = (p) => Math.max(DYN_DMG.min, p.score / DYN_DMG.per);
+  // фактический урон обычного удара
+  const curDmg = (p) => Math.max(1, Math.round(p.dmg * dmgMult(p)));
+
   /* ---------- редкие перки ---------- */
   // «Удача»: +12% шанса крита ×2 за каждые 700 набранных в бою очков
   const luckChance = (p) => (p.luck ? Math.floor(p.score / PERKS.luck.step) * PERKS.luck.per : 0);
@@ -285,6 +293,6 @@ const Combat = (() => {
 
   return {
     GEM, DUEL_MOVES, TWO_BARRELS, fighter, matchStart, comboMult, chargeTargets, startTurn,
-    duelOn, duelMoves, duelTurn, hit, ramOnCombo, snackOnCombo, snack, checkRage, onScore, luckChance, shieldBlock, SNACK, endTurn, count, over10, hasInj, hasPassive, upPassive,
+    duelOn, duelMoves, duelTurn, hit, dmgMult, curDmg, ramOnCombo, snackOnCombo, snack, checkRage, onScore, luckChance, shieldBlock, SNACK, endTurn, count, over10, hasInj, hasPassive, upPassive,
   };
 })();

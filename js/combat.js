@@ -17,7 +17,7 @@ const Combat = (() => {
   // «Таран»: на каком шаге каскада срабатывает и какая доля урона (обычная / усиленная)
   const RAM = { combo: 4, dmg: 0.5, dmgUp: 0.65 };
   // «Перекус»: шаг каскада, лечение (база + за каждый зелёный сверх 10; усиленное) и шанс крита за стак
-  const SNACK = { combo: 3, base: { heal: 20, perGreen: 5 }, up: { heal: 28, perGreen: 7 }, crit: 0.05, critUp: 0.07, critMult: 1.75 };
+  const SNACK = { combo: 3, base: { heal: 10, perGreen: 5 }, up: { heal: 14, perGreen: 7 }, crit: 0.05, critUp: 0.07, critMult: 1.75 };
   // «Наручники»: доля заряда соперника, которую срезает каждая атака Хэртли (+ за каждую звезду сверх 10)
   const HANDCUFFS = { base: { pct: 20, perStar: 4 }, up: { pct: 28, perStar: 5 } };
 

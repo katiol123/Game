@@ -862,7 +862,8 @@ const App = (() => {
     renderTable({ flip: true });
     renderSchedule();
     busy = false;
-    if (League.finished(state)) setTimeout(celebrate, 1500);
+    // окно чемпиона — только если за эти 1,5 с не успели начать следующий сезон
+    if (League.finished(state)) setTimeout(() => { if (League.finished(state)) celebrate(); }, 1500);
   }
 
   /* ---------------------------------------------------------

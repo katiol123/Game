@@ -739,6 +739,8 @@ const Engine = (() => {
   /* ---------------------------------------------------------
    *  UI матча
    * ------------------------------------------------------- */
+  // Надпись по центру поля. После анимации класс снимается: иначе при следующем показе экрана матча
+  // (display: none → block) браузер перезапускает анимацию и всплывает надпись прошлого боя
   function banner(text, color = '#ffd21f', cls = '') {
     const b = $('banner');
     b.textContent = text;
@@ -746,6 +748,11 @@ const Engine = (() => {
     b.className = 'banner' + (cls ? ' ' + cls : '');
     void b.offsetWidth;
     b.classList.add('show');
+  }
+  function clearBanner() {
+    const b = $('banner');
+    b.className = 'banner';
+    b.textContent = '';
   }
 
   function log(html, color) {
@@ -893,7 +900,7 @@ const Engine = (() => {
     el.classList.add(cls);
     const key = '_cls_' + cls;
     clearTimeout(el[key]);
-    el[key] = setTimeout(() => el.classList.remove(cls), ms);
+    el[key] = setTimeout(() => el.classList.remove(cls), ms / speed);
   }
   const other = (p) => players[1 - players.indexOf(p)];
 
@@ -1065,6 +1072,7 @@ const Engine = (() => {
     s.classList.remove('bump');
     void s.offsetWidth;
     s.classList.add('bump');
+    s.addEventListener('animationend', () => s.classList.remove('bump'), { once: true });
   }
 
   /* ---------------------------------------------------------
@@ -1378,6 +1386,7 @@ const Engine = (() => {
       selected = null;
       dragFrom = null;
       busySwap = false;
+      clearBanner(); // надпись прошлого боя не должна всплыть в новом
       players = [home, away].map((hero) => Object.assign(Combat.fighter(hero), { shown: 0 }));
       Combat.matchStart(players); // «Выбитые зубы» с прошлых боёв — соперник стартует с половиной заряда
       turn = 0; // хозяева ходят первыми
@@ -1507,7 +1516,21 @@ const Engine = (() => {
     window.addEventListener('pointerup', () => { dragFrom = null; });
     window.addEventListener('pointercancel', () => { dragFrom = null; });
     window.addEventListener('resize', resize);
+    // надпись уходит — снимаем класс, чтобы анимация не повторилась при следующем показе экрана матча
+    $('banner').addEventListener('animationend', clearBanner);
     requestAnimationFrame(frame);
+  }
+
+  // CSS-анимации матча идут со скоростью игры (--spd) и замирают на паузе
+  function syncAnimSpeed() {
+    const root = document.documentElement;
+    root.style.setProperty('--spd', speed);
+    root.classList.toggle('game-paused', paused);
+    document.getAnimations().forEach((a) => {
+      const t = a.effect && a.effect.target;
+      if (!t || !t.classList || !t.classList.contains('strike-orb')) return; // летящий удар — Web Animation
+      if (paused) a.pause(); else a.play();
+    });
   }
 
   return {
@@ -1518,9 +1541,9 @@ const Engine = (() => {
     skip,
     resize,
     setActive(v) { active = v; if (v) resize(); },
-    setSpeed(v) { speed = v; },
+    setSpeed(v) { speed = v; syncAnimSpeed(); },
     getSpeed: () => speed,
-    setPaused(v) { paused = v; },
+    setPaused(v) { paused = v; syncAnimSpeed(); },
     isPaused: () => paused,
     isPlaying: () => !!current,
     // для автотестов: текущее поле и ждём ли хода игрока

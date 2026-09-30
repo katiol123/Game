@@ -819,7 +819,8 @@ const App = (() => {
         roster[opp.id].level - roster[me.id].level,
         res.dealt[i],
         roster[me.id].injuries.some((x) => x.id === 'concussion') || res.injuries[i].includes('concussion'));
-      m.result = { home: res.home, away: res.away, winner: res.winner, ko: res.ko, crush: res.crush, hp: res.hp };
+      m.result = { home: res.home, away: res.away, winner: res.winner, ko: res.ko, crush: res.crush, hp: res.hp,
+        stats: res.stats, koMoves: res.koMoves };
       // опыт за бой обоим бойцам
       const xp = [[H, A, 'home'], [A, H, 'away']].map(([h, opp, side], i) => {
         const mul = multFor(h, opp, i);
@@ -840,6 +841,8 @@ const App = (() => {
       await showResult(H, A, res, round.every((x) => x.result), xp, lost);
       await resolveLevelUps([H.id, A.id]);
     }
+
+    await roundSummary(r); // лучшие показатели тура и MVP
 
     state.round++;
     League.save(state);
@@ -973,6 +976,89 @@ const App = (() => {
       setTimeout(() => el.remove(), 500);
       if (act.dataset.act === 'new') newTournament(true);
       if (act.dataset.act === 'next') nextSeason();
+    });
+  }
+
+  /* ---------------------------------------------------------
+   *  Итоги тура: лучшие показатели и MVP
+   * ------------------------------------------------------- */
+  // Лучшие показатели тура r. Ничьи в категории и в MVP решает место в таблице (выше — лучше).
+  function roundAwards(r) {
+    const st = League.standings(state);
+    const place = (id) => st.findIndex((row) => row.id === id);
+    const entries = []; // по бойцу в каждом матче
+    state.schedule[r].forEach((m) => {
+      const res = m.result;
+      if (!res || !res.stats) return;
+      [[m.home, m.away, 0, 'home'], [m.away, m.home, 1, 'away']].forEach(([id, opp, i, side]) =>
+        entries.push({ id, opp, s: res.stats[i], won: res.winner === side, ko: res.ko, koMoves: res.koMoves }));
+    });
+    const best = (list, val, lower = false) => list.slice().sort((a, b) =>
+      (lower ? val(a) - val(b) : val(b) - val(a)) || place(a.id) - place(b.id))[0];
+    const ruPlural = (n, one, few, many) => (n % 10 === 1 && n % 100 !== 11 ? one
+      : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? few : many);
+    const moves = (n) => tr(`${n} ${ruPlural(n, 'ход', 'хода', 'ходов')}`, `${n} moves`);
+    const cats = [
+      { icon: '💥', name: tr('Сильнейший удар', 'Strongest strike'), pick: best(entries, (e) => e.s.maxHit),
+        value: (e) => tr(`${e.s.maxHit} урона`, `${e.s.maxHit} damage`) },
+      { icon: '🩸', name: tr('Больше всего урона за бой', 'Most damage in a bout'), pick: best(entries, (e) => e.s.dmg),
+        value: (e) => tr(`${e.s.dmg} урона`, `${e.s.dmg} damage`) },
+      { icon: '⏱️', name: tr('Быстрейший нокаут', 'Fastest knockout'), pick: best(entries.filter((e) => e.won && e.ko), (e) => e.koMoves, true),
+        value: (e) => tr(`за ${moves(e.koMoves)}`, `in ${moves(e.koMoves)}`) },
+      { icon: '⚔️', name: tr('Больше всего атак', 'Most attacks'), pick: best(entries, (e) => e.s.attacks),
+        value: (e) => tr(`${e.s.attacks} ${ruPlural(e.s.attacks, 'атака', 'атаки', 'атак')}`, `${e.s.attacks} attacks`) },
+      { icon: '🌊', name: tr('Лучший каскад', 'Best cascade'), pick: best(entries, (e) => e.s.combo),
+        value: (e) => tr(`комбо ×${e.s.combo}`, `combo ×${e.s.combo}`) },
+    ];
+    // MVP: чаще всех среди лучших; при равенстве — выше в таблице
+    const count = {};
+    cats.forEach((c) => { if (c.pick) count[c.pick.id] = (count[c.pick.id] || 0) + 1; });
+    const mvp = Object.keys(count).sort((a, b) => count[b] - count[a] || place(a) - place(b))[0];
+    return { cats, mvp, mvpCount: mvp ? count[mvp] : 0 };
+  }
+
+  function roundSummary(r) {
+    const { cats, mvp, mvpCount } = roundAwards(r);
+    if (!mvp) return Promise.resolve();
+    return new Promise((resolve) => {
+      const el = document.createElement('div');
+      el.className = 'roundup';
+      const M = hero(mvp);
+      el.style.setProperty('--hc', M.color);
+      Sound.play('levelup');
+      const awards = (n) => tr(`${n} ${n === 1 ? 'награда' : n < 5 ? 'награды' : 'наград'}`, `${n} ${n === 1 ? 'award' : 'awards'}`);
+      el.innerHTML = `
+        <div class="ru-box">
+          <div class="kicker">${tr('Итоги тура', 'Round summary')}</div>
+          <h2>${tr('Тур', 'Round')} ${r + 1}</h2>
+          <div class="ru-grid">${cats.map((c, i) => {
+            if (!c.pick) {
+              return `<div class="ru-card none" style="--i:${i}"><span class="ru-icon">${c.icon}</span><small>${c.name}</small>
+                <b class="ru-none">${tr('нокаутов не было', 'no knockouts')}</b></div>`;
+            }
+            const h = hero(c.pick.id), o = hero(c.pick.opp);
+            return `<div class="ru-card ${c.pick.id === mvp ? 'mvp-mark' : ''}" style="--hc:${h.color};--i:${i}">
+              <span class="ru-icon">${c.icon}</span><small>${c.name}</small>
+              ${ava(h)}<b class="ru-name">${h.name}</b>
+              <span class="ru-val">${c.value(c.pick)}</span>
+              <span class="ru-vs">${tr('против', 'vs')} ${o.name}</span>
+            </div>`;
+          }).join('')}</div>
+          <div class="ru-mvp">
+            <img src="${M.sprite}" alt="" />
+            <div>
+              <div class="kicker hc">⭐ MVP ${tr('тура', 'of the round')}</div>
+              <h3>${M.name}</h3>
+              <p>${awards(mvpCount)} ${tr('из', 'of')} ${cats.filter((c) => c.pick).length}</p>
+            </div>
+          </div>
+          <button class="cta" id="ruGo"><span>${tr('К турнирной таблице', 'To the standings')}</span></button>
+        </div>`;
+      $('fx').append(el);
+      el.querySelector('#ruGo').addEventListener('click', () => {
+        el.classList.add('out');
+        setTimeout(() => { el.remove(); resolve(); }, 450);
+      }, { once: true });
     });
   }
 

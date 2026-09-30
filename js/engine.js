@@ -1274,6 +1274,9 @@ const Engine = (() => {
       combo: [a.maxCombo, b.maxCombo],
       injuries: [a.newInjuries.slice(), b.newInjuries.slice()],
       dealt: [a.injuriesDealt, b.injuriesDealt],
+      // статистика для итогов тура
+      stats: [a, b].map((p) => ({ maxHit: p.maxHit, dmg: p.dmgDealt, attacks: p.attacks, combo: p.maxCombo })),
+      koMoves: ko ? a.moves + b.moves : null, // за сколько ходов (обоих бойцов) случился нокаут
     });
   }
 

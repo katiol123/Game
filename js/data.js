@@ -90,7 +90,7 @@ const PERKS = {
   luck: { step: 700, per: 0.12, mult: 2 }, // +12% шанса крита ×2 за каждые 700 очков в бою
   bones: { factor: 0.5 },           // шанс получить травму ×0,5
   shield: { step: 700, per: 10, perBehind: 5 }, // блок 10 урона за каждые 700 очков, если впереди по очкам, иначе 5
-  vamp: { share: 0.2 },             // лечение 20% от нанесённого урона
+  vamp: { over: 7, per: 3 },        // каждый попавший удар лечит на (фиолетовых − 7) × 3
   wind: { chance: 0.5 },            // раз за бой: смертельный урон — шанс 50% остаться с 1 здоровья
   momentum: { untilOpp: 1000 },     // «Кураж»: ярость со старта, пока соперник не наберёт 1000 очков
 };
@@ -106,7 +106,7 @@ const RARE_UPGRADES = [
     desc: T('Блокирует урон от каждого удара: за каждые 700 очков в бою — 10, если набрано больше, чем у соперника, иначе 5',
       'Blocks damage from each strike: per 700 points in the bout — 10 while ahead of the opponent on points, otherwise 5') },
   { id: 'vamp', icon: '🧛', name: T('Вампиризм', 'Vampirism'),
-    desc: T('Лечит на 20% от нанесённого урона', 'Heals 20% of the damage dealt') },
+    desc: T('Каждый попавший удар лечит на (фиолетовых камней на поле − 7) × 3', 'Each landed strike heals (purple gems on the board − 7) × 3') },
   { id: 'wind', icon: '💨', name: T('Второе дыхание', 'Second Wind'),
     desc: T('Раз за бой: получив смертельный урон, с шансом 50% остаётся с 1 здоровья', 'Once per bout: on lethal damage, 50% chance to survive with 1 HP') },
   { id: 'momentum', icon: '🎉', name: T('Кураж', 'Momentum'),

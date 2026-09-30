@@ -78,6 +78,10 @@ const Combat = (() => {
       score: 0,
       moves: 0,
       maxCombo: 0,
+      // статистика боя (итоги тура)
+      attacks: 0,   // сколько ударов нанёс (включая промахи и увороты соперника)
+      dmgDealt: 0,  // суммарный урон ударами
+      maxHit: 0,    // сильнейший удар
     };
     refresh(p);
     return p;
@@ -138,6 +142,7 @@ const Combat = (() => {
     if (kind === 'charge2') base = Math.ceil(eff * (upPassive(att, 'goose') ? TWO_BARRELS.dmgFactorUp : TWO_BARRELS.dmgFactor));
     if (kind === 'ram') base = Math.round(eff * (upPassive(att, 'cat') ? RAM.dmgUp : RAM.dmg));
     const ev = { kind, base, dmg: 0, crit: false, missed: false, dodged: false, bleedApplied: false, drainPct: 0, aimLost: 0 };
+    att.attacks++;
 
     // «Перелом руки»: (3 × красных камней)% шанс промахнуться — удар пропадает целиком
     if (hasInj(att, 'arm') && rnd() < Math.min(1, count(g, GEM.red) * 0.03)) {
@@ -180,9 +185,11 @@ const Combat = (() => {
       if (block > 0) { ev.blocked = Math.min(block, ev.dmg); ev.dmg -= ev.blocked; }
       def.hp = Math.max(0, def.hp - ev.dmg);
       att.touched = def.touched = true;
-      // «Вампиризм»: лечит на долю нанесённого урона
-      if (att.vamp && ev.dmg > 0 && att.hp > 0) {
-        ev.vamp = Math.max(0, Math.min(att.maxHp - att.hp, Math.round(ev.dmg * PERKS.vamp.share)));
+      att.dmgDealt += ev.dmg;
+      att.maxHit = Math.max(att.maxHit, ev.dmg);
+      // «Вампиризм»: каждый попавший удар лечит на (фиолетовых − 7) × 3
+      if (att.vamp && att.hp > 0) {
+        ev.vamp = Math.max(0, Math.min(att.maxHp - att.hp, Math.max(0, count(g, GEM.purple) - PERKS.vamp.over) * PERKS.vamp.per));
         att.hp += ev.vamp;
       }
       // «Второе дыхание»: смертельный удар — шанс остаться с 1 здоровья (раз за бой)

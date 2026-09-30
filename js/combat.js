@@ -17,7 +17,7 @@ const Combat = (() => {
   // «Таран»: на каком шаге каскада срабатывает и какая доля урона (обычная / усиленная)
   const RAM = { combo: 4, dmg: 0.5, dmgUp: 0.65 };
   // «Перекус»: шаг каскада, лечение (база + за каждый зелёный сверх 10; усиленное) и шанс крита за стак
-  const SNACK = { combo: 4, base: { heal: 25, perGreen: 5 }, up: { heal: 45, perGreen: 12 }, crit: 0.15, critMult: 1.75 };
+  const SNACK = { combo: 4, base: { heal: 25, perGreen: 5 }, up: { heal: 45, perGreen: 12 }, crit: 0.15, critUp: 0.22, critMult: 1.75 };
   // «Наручники»: доля заряда соперника, которую срезает каждая атака Хэртли (+ за каждую звезду сверх 10)
   const HANDCUFFS = { base: { pct: 20, perStar: 4 }, up: { pct: 28, perStar: 5 } };
 
@@ -133,7 +133,7 @@ const Combat = (() => {
     // криты: «Хедшот» (×2) и «Перекус» (×1,75)
     let mult = 1;
     if (hasPassive(att, 'granny') && att.aim > 0 && rnd() < Math.min(1, att.aim * (upPassive(att, 'granny') ? 0.09 : 0.07))) { ev.crit = true; mult = 2; }
-    else if (hasPassive(att, 'shawarma') && att.snack > 0 && rnd() < Math.min(1, att.snack * SNACK.crit)) { ev.crit = true; mult = SNACK.critMult; }
+    else if (hasPassive(att, 'shawarma') && att.snack > 0 && rnd() < Math.min(1, att.snack * (upPassive(att, 'shawarma') ? SNACK.critUp : SNACK.crit))) { ev.crit = true; mult = SNACK.critMult; }
 
     // «Невозмутимость»: шанс полностью проигнорировать удар
     const dodgeBase = SOFA_BASE_DODGE + (upPassive(def, 'sofa') ? 0.05 : 0);

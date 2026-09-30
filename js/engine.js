@@ -837,7 +837,7 @@ const Engine = (() => {
     else if (p.rageReady) chips.push(`<span class="st-chip" title="${UPGRADE_BY_ID.rage.desc}">🔥 ${Math.min(p.score, RAGE_SCORE)} / ${RAGE_SCORE}</span>`);
     if (p.bleed) chips.push(`<span class="st-chip bad" title="${tr('Кровотечение: в начале каждого хода (красных камней − 10) × 4 урона', 'Bleeding: (red gems − 10) × 4 damage at the start of each turn')}">🩸 ${tr('Истекает кровью', 'Bleeding')}</span>`);
     if (p.aim) chips.push(`<span class="st-chip good" title="${tr(`Прицеливание: ${p.aim * 7}% шанс крита ×2`, `Aiming: ${p.aim * 7}% chance of a ×2 crit`)}">🎯 ×${p.aim}</span>`);
-    if (p.snack) chips.push(`<span class="st-chip good" title="${tr(`Перекус: ${Math.round(p.snack * Combat.SNACK.crit * 100)}% шанс крита ×1,75`, `Snack Time: ${Math.round(p.snack * Combat.SNACK.crit * 100)}% chance of a ×1.75 crit`)}">🌯 ×${p.snack}</span>`);
+    if (p.snack) chips.push(`<span class="st-chip good" title="${tr(`Перекус: ${Math.round(p.snack * (p.empowered ? Combat.SNACK.critUp : Combat.SNACK.crit) * 100)}% шанс крита ×1,75`, `Snack Time: ${Math.round(p.snack * (p.empowered ? Combat.SNACK.critUp : Combat.SNACK.crit) * 100)}% chance of a ×1.75 crit`)}">🌯 ×${p.snack}</span>`);
     p.el.querySelector('.status').innerHTML = chips.join('');
   }
 

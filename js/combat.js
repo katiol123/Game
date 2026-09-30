@@ -13,7 +13,7 @@ const Combat = (() => {
   const DUEL_ENEMY_FACTOR = 0.4; // доля урона соперника Пыли в дополнительных ударах
   const SOFA_BASE_DODGE = 0.1;   // «Невозмутимость»: базовый шанс уворота
   // «Два ствола»: множитель комбо для второй шкалы не выше cap, урон ударов со второй шкалы × dmgFactor
-  const TWO_BARRELS = { cap: 2, capUp: 2.5, dmgFactor: 0.5 };
+  const TWO_BARRELS = { cap: 2, capUp: 2.5, dmgFactor: 0.5, dmgFactorUp: 0.75 };
   // «Таран»: на каком шаге каскада срабатывает и какая доля урона (обычная / усиленная)
   const RAM = { combo: 4, dmg: 0.5, dmgUp: 0.65 };
   // «Перекус»: шаг каскада, лечение (база + за каждый зелёный сверх 10; усиленное) и шанс крита за стак
@@ -120,7 +120,7 @@ const Combat = (() => {
   function hit(att, def, g, kind = 'charge', rnd = Math.random) {
     let base = att.dmg;
     if (kind === 'duel' && att.id !== 'dumpling') base = Math.ceil(att.dmg * DUEL_ENEMY_FACTOR);
-    if (kind === 'charge2') base = Math.ceil(att.dmg * TWO_BARRELS.dmgFactor);
+    if (kind === 'charge2') base = Math.ceil(att.dmg * (upPassive(att, 'goose') ? TWO_BARRELS.dmgFactorUp : TWO_BARRELS.dmgFactor));
     if (kind === 'ram') base = Math.round(att.dmg * (upPassive(att, 'cat') ? RAM.dmgUp : RAM.dmg));
     const ev = { kind, base, dmg: 0, crit: false, missed: false, dodged: false, bleedApplied: false, drainPct: 0, aimLost: 0 };
 

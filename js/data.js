@@ -156,8 +156,8 @@ const PASSIVES = {
     desc: T('Две шкалы заряда. Первая заряжается как обычно. Вторая дополнительно заряжается от каскадов с комбо ×2 и выше (с множителем не выше ×2); удар с неё наносит 50% урона. Эффекты на заряд действуют на обе.',
       'Two charge bars. The first charges as usual. The second also charges from cascades with combo ×2 or higher (multiplier capped at ×2); its strike deals 50% damage. Charge effects apply to both.'),
 
-    up: T('Предел множителя для второй шкалы — ×2,5 вместо ×2.',
-      'The second bar’s multiplier cap is ×2.5 instead of ×2.'),
+    up: T('Предел множителя для второй шкалы — ×2,5 вместо ×2, удар с неё наносит 75% урона вместо 50%.',
+      'The second bar’s multiplier cap is ×2.5 instead of ×2, and its strike deals 75% damage instead of 50%.'),
   },
   shawarma: {
     icon: '🌯', name: T('Перекус', 'Snack Time'),

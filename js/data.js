@@ -89,8 +89,8 @@ const SPECIAL_UPGRADES = [
 const PERKS = {
   luck: { step: 700, per: 0.12, mult: 2 }, // +12% шанса крита ×2 за каждые 700 очков в бою
   bones: { factor: 0.5 },           // шанс получить травму ×0,5
-  shield: { step: 700, per: 10 },  // блок 10 урона за каждые 700 очков, если впереди по очкам
-  vamp: { share: 0.15 },            // лечение 15% от нанесённого урона
+  shield: { step: 700, per: 10, perBehind: 5 }, // блок 10 урона за каждые 700 очков, если впереди по очкам, иначе 5
+  vamp: { share: 0.2 },             // лечение 20% от нанесённого урона
   wind: { chance: 0.5 },            // раз за бой: смертельный урон — шанс 50% остаться с 1 здоровья
   momentum: { untilOpp: 1000 },     // «Кураж»: ярость со старта, пока соперник не наберёт 1000 очков
 };
@@ -103,10 +103,10 @@ const RARE_UPGRADES = [
   { id: 'bones', icon: '🦴', name: T('Твёрдые кости', 'Hard Bones'),
     desc: T('Шанс получить травму вдвое меньше', 'Half the chance to get injured') },
   { id: 'shield', icon: '🛡️', name: T('Круглый щит', 'Round Shield'),
-    desc: T('Блокирует 10 урона от каждого удара за каждые 700 очков в бою, пока набрано больше, чем у соперника',
-      'Blocks 10 damage from each strike per 700 points in the bout while ahead of the opponent on points') },
+    desc: T('Блокирует урон от каждого удара: за каждые 700 очков в бою — 10, если набрано больше, чем у соперника, иначе 5',
+      'Blocks damage from each strike: per 700 points in the bout — 10 while ahead of the opponent on points, otherwise 5') },
   { id: 'vamp', icon: '🧛', name: T('Вампиризм', 'Vampirism'),
-    desc: T('Лечит на 15% от нанесённого урона', 'Heals 15% of the damage dealt') },
+    desc: T('Лечит на 20% от нанесённого урона', 'Heals 20% of the damage dealt') },
   { id: 'wind', icon: '💨', name: T('Второе дыхание', 'Second Wind'),
     desc: T('Раз за бой: получив смертельный урон, с шансом 50% остаётся с 1 здоровья', 'Once per bout: on lethal damage, 50% chance to survive with 1 HP') },
   { id: 'momentum', icon: '🎉', name: T('Кураж', 'Momentum'),

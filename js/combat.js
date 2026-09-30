@@ -239,8 +239,9 @@ const Combat = (() => {
   /* ---------- редкие перки ---------- */
   // «Удача»: +12% шанса крита ×2 за каждые 700 набранных в бою очков
   const luckChance = (p) => (p.luck ? Math.floor(p.score / PERKS.luck.step) * PERKS.luck.per : 0);
-  // «Круглый щит»: блокирует 10 урона за каждые 700 очков, пока боец впереди по очкам
-  const shieldBlock = (p, opp) => (p.shield && p.score > opp.score ? Math.floor(p.score / PERKS.shield.step) * PERKS.shield.per : 0);
+  // «Круглый щит»: за каждые 700 очков блокирует 10 урона, пока боец впереди по очкам, иначе 5
+  const shieldBlock = (p, opp) => (p.shield
+    ? Math.floor(p.score / PERKS.shield.step) * (p.score > opp.score ? PERKS.shield.per : PERKS.shield.perBehind) : 0);
   // «Второе дыхание»: раз за бой при смертельном уроне шанс 50% остаться с 1 здоровья
   function tryRevive(p, rnd = Math.random) {
     if (!p.secondWind || p.windUsed) return false;

@@ -85,9 +85,9 @@ const SPECIAL_UPGRADES = [
 // Редкие перки (шанс выпадения — RARE_CHANCE на каждую карточку, поровну между доступными; ИИ берёт их в первую очередь).
 // Каждый перк можно получить только один раз.
 const PERKS = {
-  luck: { perK: 0.075, mult: 2 },   // +7,5% шанса крита ×2 за каждую тысячу очков, если впереди по очкам
+  luck: { step: 700, per: 0.075, mult: 2 }, // +7,5% шанса крита ×2 за каждые 700 очков, если впереди по очкам
   bones: { factor: 0.5 },           // шанс получить травму ×0,5
-  shield: { perK: 10 },             // блок 10 урона за каждую тысячу очков, если впереди по очкам
+  shield: { step: 700, per: 10 },  // блок 10 урона за каждые 700 очков, если впереди по очкам
   vamp: { share: 0.15 },            // лечение 15% от нанесённого урона
   wind: { chance: 0.5 },            // раз за бой: смертельный урон — шанс 50% остаться с 1 здоровья
   momentum: { untilOpp: 1000 },     // «Кураж»: ярость со старта, пока соперник не наберёт 1000 очков
@@ -96,13 +96,13 @@ const STAT_CARD_CHANCE = 0.3; // каждая из трёх карточек х�
 const RARE_CHANCE = 0.1;      // все редкие вместе
 const RARE_UPGRADES = [
   { id: 'luck', icon: '🍀', name: T('Удача', 'Luck'),
-    desc: T('+7,5% шанса крита ×2 за каждую тысячу очков в бою, пока набрано больше, чем у соперника',
-      '+7.5% chance of a ×2 crit per thousand points in the bout while ahead of the opponent on points') },
+    desc: T('+7,5% шанса крита ×2 за каждые 700 очков в бою, пока набрано больше, чем у соперника',
+      '+7.5% chance of a ×2 crit per 700 points in the bout while ahead of the opponent on points') },
   { id: 'bones', icon: '🦴', name: T('Твёрдые кости', 'Hard Bones'),
     desc: T('Шанс получить травму вдвое меньше', 'Half the chance to get injured') },
   { id: 'shield', icon: '🛡️', name: T('Круглый щит', 'Round Shield'),
-    desc: T('Блокирует 10 урона от каждого удара за каждую тысячу очков в бою, пока набрано больше, чем у соперника',
-      'Blocks 10 damage from each strike per thousand points in the bout while ahead of the opponent on points') },
+    desc: T('Блокирует 10 урона от каждого удара за каждые 700 очков в бою, пока набрано больше, чем у соперника',
+      'Blocks 10 damage from each strike per 700 points in the bout while ahead of the opponent on points') },
   { id: 'vamp', icon: '🧛', name: T('Вампиризм', 'Vampirism'),
     desc: T('Лечит на 15% от нанесённого урона', 'Heals 15% of the damage dealt') },
   { id: 'wind', icon: '💨', name: T('Второе дыхание', 'Second Wind'),

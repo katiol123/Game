@@ -719,7 +719,8 @@ canvas { display: block; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0,
 .xg-bar i { display: block; height: 100%; border-radius: 4px; transition: width 0.7s cubic-bezier(.3, .8, .3, 1);
   background: linear-gradient(90deg, #7fe7ff, #2f86ff); box-shadow: 0 0 10px #2f86ff; }
 .xg-why { font-size: 10px; line-height: 1.35; color: var(--muted); margin-top: 3px; }
-.xg-why .up { color: #b6f5a0; } .xg-why .down { color: #ff9aa5; } .xg-why .hurt { color: #ffb86b; }
+.xg-why .up { color: #b6f5a0; } .xg-why .down { color: #ff9aa5; } .xg-why .mvp { color: #ffd21f; }
+.xg-why .hurt { color: #ffb86b; }
 .xg-num { font-size: 11px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
 .xg-up { position: absolute; right: 10px; bottom: 5px; font-family: var(--display); font-size: 13px; color: #ffd21f; opacity: 0;
   text-shadow: 0 0 10px #ff9a1a; pointer-events: none; }
@@ -862,6 +863,8 @@ canvas { display: block; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0,
 .ru-mvp img { height: 130px; filter: drop-shadow(0 0 18px var(--hc)); animation: bob 1.4s ease-in-out infinite; }
 .ru-mvp h3 { font-size: 32px; color: var(--hc); margin: 2px 0; }
 .ru-mvp p { color: #cfd3f5; }
+.ru-mvp .ru-bonus { margin-top: 4px; font-weight: 700; color: #ffd21f; }
+.xp-mvp { font-size: 12px; font-weight: 700; color: #ffd21f; margin-top: 6px; }
 @media (max-width: 1000px) { .ru-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .ru-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ru-mvp img { height: 90px; } }
 

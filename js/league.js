@@ -37,6 +37,7 @@ const League = (() => {
     if (typeof e.pending !== 'number') e.pending = 0;
     if (!Array.isArray(e.injuries)) e.injuries = [];
     if (typeof e.momentum !== 'boolean') e.momentum = false; // «Кураж» на следующий бой
+    if (typeof e.mvpBonus !== 'boolean') e.mvpBonus = false; // MVP тура: +50% опыта в следующем бою
     return e;
   }
 
@@ -56,14 +57,16 @@ const League = (() => {
   // Множитель опыта: разница с соперником и травмы.
   // placeDiff — на сколько мест соперник выше (отрицательное — ниже), levelDiff — на сколько уровней выше,
   // dealt — сколько травм нанесено сопернику (+30% за каждую), concussed — «Сотрясение мозга»: опыта нет.
-  function xpMultiplier(placeDiff, levelDiff, dealt = 0, concussed = false) {
+  // mvp — MVP прошлого тура: +50% к множителю в этом бою
+  function xpMultiplier(placeDiff, levelDiff, dealt = 0, concussed = false, mvp = false) {
     const place = placeDiff * XP_PLACE_BONUS;
     const level = levelDiff * XP_LEVEL_BONUS;
     const injury = dealt * XP_INJURY_BONUS;
-    const raw = 1 + place + level + injury;
+    const mvpBonus = mvp ? XP_MVP_BONUS : 0;
+    const raw = 1 + place + level + injury + mvpBonus;
     const floored = raw < XP_MIN_MULT;
     const mult = concussed ? 0 : Math.max(XP_MIN_MULT, raw);
-    return { mult, place, level, injury, dealt, floored, concussed };
+    return { mult, place, level, injury, dealt, mvp: mvpBonus, floored, concussed };
   }
 
   // Сколько опыта получает сторона ('home' | 'away') за матч; mult — множитель за соперника

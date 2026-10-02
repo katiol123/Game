@@ -599,6 +599,7 @@ const App = (() => {
         <span class="xp-lvl">${tr('Уровень', 'Level')} <b>${h.level}</b></span>
         <span class="xp-num"><b>${h.xp}</b> / ${need} ${tr('опыта', 'XP')}</span>
       </div>
+      ${h.mvpBonus ? `<div class="xp-mvp">⭐ ${tr(`MVP тура: +${XP_MVP_BONUS * 100}% опыта в следующем бою`, `Round MVP: +${XP_MVP_BONUS * 100}% XP in the next bout`)}</div>` : ''}
       <div class="xp-guard" title="${tr('Шанс, что каждое из 2 очков, отнимаемых травмой, уцелеет. +12% за уровень, максимум 90%',
         'Chance that each of the 2 points an injury takes is kept. +12% per level, max 90%')}">🪨 ${tr('Закалка', 'Hardening')}: <b>${Math.round(injuryGuard(h.level) * 100)}%</b></div>
       <div class="xp-bar"><i style="--x:0" data-x="${h.xp / need}"></i></div>
@@ -672,6 +673,7 @@ const App = (() => {
       if (mul.place) parts.push(`${tr('место соперника', 'opponent place')} ${sign(mul.place)}`);
       if (mul.level) parts.push(`${tr('уровень соперника', 'opponent level')} ${sign(mul.level)}`);
       if (mul.dealt) parts.push(`<span class="hurt">✚ ${tr('травмы', 'injuries')} ×${mul.dealt}</span> ${sign(mul.injury)}`);
+      if (mul.mvp) parts.push(`<span class="mvp">⭐ ${tr('MVP тура', 'round MVP')}</span> ${sign(mul.mvp)}`);
       if (mul.floored) parts.push(`<span class="down">${tr('минимум', 'minimum')} ×${fmt(XP_MIN_MULT)}</span>`);
       parts.push(`${tr('итого', 'total')} ×${fmt(mul.mult)}`);
       return `<div class="xg-why">${parts.join(' · ')}</div>`;
@@ -818,7 +820,8 @@ const App = (() => {
         state.round > 0 ? place(me.id) - place(opp.id) : 0, // в первом туре места ещё условные
         roster[opp.id].level - roster[me.id].level,
         res.dealt[i],
-        roster[me.id].injuries.some((x) => x.id === 'concussion') || res.injuries[i].includes('concussion'));
+        roster[me.id].injuries.some((x) => x.id === 'concussion') || res.injuries[i].includes('concussion'),
+        roster[me.id].mvpBonus);
       m.result = { home: res.home, away: res.away, winner: res.winner, ko: res.ko, crush: res.crush, hp: res.hp,
         stats: res.stats, koMoves: res.koMoves };
       // опыт за бой обоим бойцам
@@ -832,6 +835,9 @@ const App = (() => {
       League.updateInjuries(roster[A.id], res.injuries[1]);
       // каждая полученная травма отнимает 2 очка случайных характеристик
       const lost = [H, A].map((h, i) => League.injuryPenalty(roster[h.id], h.id, res.injuries[i].length));
+      // бонус MVP тура израсходован в этом бою
+      roster[H.id].mvpBonus = false;
+      roster[A.id].mvpBonus = false;
       // «Кураж»: сокрушительная победа — следующий бой начнётся в ярости (действует один бой)
       [[H, 'home'], [A, 'away']].forEach(([h, side]) => {
         const e = roster[h.id];
@@ -1021,6 +1027,9 @@ const App = (() => {
   function roundSummary(r) {
     const { cats, mvp, mvpCount } = roundAwards(r);
     if (!mvp) return Promise.resolve();
+    // награда MVP: +50% опыта в следующем бою
+    roster[mvp].mvpBonus = true;
+    League.save(state);
     return new Promise((resolve) => {
       const el = document.createElement('div');
       el.className = 'roundup';
@@ -1051,6 +1060,7 @@ const App = (() => {
               <div class="kicker hc">⭐ MVP ${tr('тура', 'of the round')}</div>
               <h3>${M.name}</h3>
               <p>${awards(mvpCount)} ${tr('из', 'of')} ${cats.filter((c) => c.pick).length}</p>
+              <p class="ru-bonus">${tr(`Бонус: +${XP_MVP_BONUS * 100}% опыта в следующем бою`, `Bonus: +${XP_MVP_BONUS * 100}% XP in the next bout`)}</p>
             </div>
           </div>
           <button class="cta" id="ruGo"><span>${tr('К турнирной таблице', 'To the standings')}</span></button>

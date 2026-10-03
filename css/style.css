@@ -835,6 +835,62 @@ canvas { display: block; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0,
 .champ-actions { display: flex; gap: 10px; justify-content: center; }
 .champ-actions { flex-wrap: wrap; }
 
+/* ---------- графики ---------- */
+.t-tools { display: flex; justify-content: flex-end; margin: 0 0 8px; }
+.t-tools .ch-open { font-weight: 700; border-color: rgba(255, 210, 31, 0.4); }
+.t-tools .ch-open:hover { border-color: #ffd21f; box-shadow: 0 0 16px rgba(255, 210, 31, 0.25); }
+.charts { position: absolute; inset: 0; overflow-y: auto; pointer-events: auto; background: rgba(8, 6, 25, 0.88);
+  backdrop-filter: blur(8px); animation: fadeIn 0.4s ease; padding: 24px 16px 32px; }
+.charts.out { animation: fadeOut 0.4s forwards; }
+.ch-box { position: relative; max-width: 1080px; margin: 0 auto; text-align: center; }
+.ch-close { position: absolute; right: 0; top: 0; width: 40px; height: 40px; padding: 0; border-radius: 50%; font-size: 16px; }
+.ch-box h2 { font-size: clamp(28px, 4.5vw, 46px); margin: 4px 0 12px;
+  background: linear-gradient(90deg, #ff5fa2, #ffd21f, #4fd1ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.ch-box h2 small { font-family: "Rubik", sans-serif; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); -webkit-text-fill-color: var(--muted); }
+.ch-seasons, .ch-metrics { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-bottom: 10px; }
+.ch-chip { padding: 6px 14px; border-radius: 99px; font-size: 13px; }
+.ch-chip.active { background: linear-gradient(135deg, #ff5fa2, #6a2bff); border-color: transparent; color: #fff; }
+.ch-tab { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 12px; }
+.ch-tab span { font-size: 15px; }
+.ch-tab.active { background: linear-gradient(135deg, #ffd21f, #ff8a1f); color: #1b1240; border-color: transparent; box-shadow: 0 6px 20px rgba(255, 170, 30, 0.35); }
+.ch-plot { position: relative; height: clamp(280px, 52vh, 460px); margin: 6px 0 12px; border-radius: 20px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)); border: 1px solid var(--border); overflow: hidden; }
+.ch-svg { display: block; touch-action: none; }
+.ch-empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-weight: 600; }
+.ch-grid line { stroke: rgba(255, 255, 255, 0.08); stroke-width: 1; }
+.ch-tick { fill: var(--muted); font: 600 11px "Rubik", sans-serif; }
+.ch-tick.off { fill: #ffd21f; }
+.ch-off { fill: rgba(255, 210, 31, 0.06); }
+.ch-series { transition: opacity 0.2s; }
+.ch-series.dim { opacity: 0.15; }
+.ch-line { fill: none; stroke: var(--hc); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--hc) 60%, transparent));
+  stroke-dasharray: var(--len); stroke-dashoffset: var(--len); animation: chDraw 0.9s cubic-bezier(.3, .8, .3, 1) forwards; }
+.ch-series.hot .ch-line { stroke-width: 3.5; }
+@keyframes chDraw { to { stroke-dashoffset: 0; } }
+.ch-dot { fill: var(--hc); stroke: #16123a; stroke-width: 2; animation: fadeIn 0.6s ease 0.5s backwards; }
+.ch-lead { stroke: var(--hc); stroke-width: 1; opacity: 0.5; }
+.ch-ava { width: 20px; height: 20px; box-shadow: 0 0 0 2px var(--hc); }
+.ch-cross { stroke: rgba(255, 255, 255, 0.35); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0; }
+.ch-cross.on { opacity: 1; }
+.ch-hit { fill: transparent; cursor: crosshair; }
+.ch-tip { position: absolute; z-index: 2; pointer-events: none; opacity: 0; transition: opacity 0.15s; min-width: 170px; text-align: left;
+  padding: 8px 12px; border-radius: 12px; background: rgba(20, 16, 50, 0.96); border: 1px solid var(--border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); font-size: 12px; }
+.ch-tip.on { opacity: 1; }
+.ch-tip b { display: block; margin-bottom: 4px; font-family: var(--display); font-weight: 400; font-size: 13px; }
+.ch-tip span { display: flex; align-items: center; gap: 6px; padding: 1px 0; color: var(--text); }
+.ch-tip i { width: 10px; height: 3px; border-radius: 2px; background: var(--hc); flex-shrink: 0; }
+.ch-tip em { margin-left: auto; padding-left: 12px; font-style: normal; font-weight: 800; font-variant-numeric: tabular-nums; }
+.ch-heroes { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.ch-hero { display: inline-flex; align-items: center; gap: 7px; padding: 4px 12px 4px 4px; border-radius: 99px; font-size: 13px;
+  opacity: 0.45; border-color: transparent; }
+.ch-hero .ava { width: 24px; height: 24px; }
+.ch-hero.on { opacity: 1; border-color: var(--hc); background: color-mix(in srgb, var(--hc) 14%, transparent); }
+.ch-all { display: inline-flex; gap: 4px; margin-left: 6px; }
+.ch-all button { padding: 4px 10px; font-size: 12px; }
+.ch-note { margin-top: 10px; font-size: 12px; color: var(--muted); }
+
 /* ---------- итоги тура ---------- */
 .roundup { position: absolute; inset: 0; overflow-y: auto; pointer-events: auto; background: rgba(8, 6, 25, 0.86);
   backdrop-filter: blur(8px); animation: fadeIn 0.5s ease; padding: 28px 16px 40px; }

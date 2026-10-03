@@ -195,12 +195,41 @@ const League = (() => {
     return {
       version: 1,
       season: 1,
-      history: [], // итоги прошлых сезонов: [{ season, table: [{ id, pts, w, d, l }] }]
+      // итоги прошлых сезонов: [{ season, table: [{ id, pts, w, d, l }], places: [{ id: место } по турам], stats: statTrack }]
+      history: [],
       playerId,
       roster,
       schedule: bergerSchedule(shuffle(HEROES.map((h) => h.id))),
       round: 0,
+      statTrack: [{ x: 0, stats: statTotals(roster) }], // характеристики героев: на старте и после каждого тура
     };
+  }
+
+  /* ---------- данные для графиков ---------- */
+  // Текущие характеристики героев (база + прокачка − травмы): { id: { str, agi, end } }
+  function statTotals(roster) {
+    return Object.fromEntries(HEROES.map((h) => {
+      const b = roster[h.id].bonus;
+      return [h.id, { str: h.stats.str + b.str, agi: h.stats.agi + b.agi, end: h.stats.end + b.end }];
+    }));
+  }
+
+  // Точка графика характеристик после тура x (1…14)
+  function snapshot(state, x) {
+    state.statTrack = state.statTrack || [];
+    state.statTrack = state.statTrack.filter((p) => p.x !== x);
+    state.statTrack.push({ x, stats: statTotals(state.roster) });
+  }
+
+  // Места в таблице после каждого сыгранного тура: [{ id: место }]
+  function placesTrack(schedule) {
+    const out = [];
+    for (let k = 1; k <= schedule.length; k++) {
+      const part = schedule.slice(0, k);
+      if (!part[k - 1].every((m) => m.result)) break;
+      out.push(Object.fromEntries(standings({ schedule: part }).map((r, i) => [r.id, i + 1])));
+    }
+    return out;
   }
 
   /* ---------- межсезонье ---------- */
@@ -235,14 +264,20 @@ const League = (() => {
   // Следующий сезон: итоги в историю, межсезонье, новое расписание. Уровни, опыт и прокачка сохраняются.
   function nextSeason(state) {
     state.history = state.history || [];
-    state.history.push({
+    const entry = {
       season: state.season || 1,
       table: standings(state).map(({ id, pts, w, d, l }) => ({ id, pts, w, d, l })),
-    });
+      places: placesTrack(state.schedule),
+      stats: (state.statTrack || []).slice(),
+    };
+    state.history.push(entry);
     const changes = offseason(state.roster);
+    // изменения межсезонья — последняя точка графика прошедшего сезона
+    entry.stats.push({ x: 'off', stats: statTotals(state.roster) });
     state.season = (state.season || 1) + 1;
     state.schedule = bergerSchedule(shuffle(HEROES.map((h) => h.id)));
     state.round = 0;
+    state.statTrack = [{ x: 0, stats: statTotals(state.roster) }];
     return changes;
   }
 
@@ -285,6 +320,8 @@ const League = (() => {
       if (s && s.version === 1 && s.schedule && s.roster && HEROES.every((h) => s.roster[h.id])) {
         Object.values(s.roster).forEach(normalizeProgress); // старые сохранения — без прокачки
         HEROES.forEach((h) => { s.roster[h.id].model = h.model; }); // модели ИИ теперь фиксированы
+        // старые сохранения без истории характеристик: график начнётся с текущего тура
+        if (!Array.isArray(s.statTrack)) s.statTrack = [{ x: s.round, stats: statTotals(s.roster) }];
         return s;
       }
     } catch (e) { /* нет доступа к хранилищу */ }
@@ -297,5 +334,5 @@ const League = (() => {
     try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
   }
 
-  return { createRoster, updateInjuries, outcome, xpMultiplier, xpGain, addXp, rollUpgrades, rollCards, aiPick, cardsFor, pickLevel, injuryPenalty, applyUpgrade, bergerSchedule, create, offseason, nextSeason, standings, heroMatches, finished, load, save, clear };
+  return { createRoster, updateInjuries, outcome, xpMultiplier, xpGain, addXp, rollUpgrades, rollCards, aiPick, cardsFor, pickLevel, injuryPenalty, applyUpgrade, bergerSchedule, create, offseason, nextSeason, statTotals, snapshot, placesTrack, standings, heroMatches, finished, load, save, clear };
 })();

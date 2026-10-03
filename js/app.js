@@ -369,6 +369,7 @@ const App = (() => {
     const st = League.standings(state);
     const anyPlayed = st.some((r) => r.p > 0);
     pane.innerHTML = `
+      <div class="t-tools"><button class="ghost ch-open">📈 ${tr('Графики', 'Charts')}</button></div>
       <div class="table">
         <div class="t-row t-head">
           <span>#</span><span class="t-who">${tr('Герой', 'Hero')}</span>
@@ -848,6 +849,8 @@ const App = (() => {
       await resolveLevelUps([H.id, A.id]);
     }
 
+    League.snapshot(state, r + 1); // характеристики после тура — для графиков
+    League.save(state);
     await roundSummary(r); // лучшие показатели тура и MVP
 
     state.round++;
@@ -1239,6 +1242,9 @@ const App = (() => {
     $('playBtn').addEventListener('click', () => (state && League.finished(state) ? nextSeason() : playRound()));
     $('newBtn').addEventListener('click', () => newTournament(false));
     $('heroBack').addEventListener('click', backToLeague);
+    $('pane-table').addEventListener('click', (e) => {
+      if (e.target.closest('.ch-open') && state && !transitioning) Charts.open(state);
+    });
     $('tabs').addEventListener('click', (e) => {
       const b = e.target.closest('button');
       if (b) switchTab(b.dataset.tab);

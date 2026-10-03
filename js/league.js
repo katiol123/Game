@@ -110,10 +110,13 @@ const League = (() => {
     return out;
   }
 
-  // ИИ выбирает редкую карточку в первую очередь, иначе — случайную
-  function aiPick(cards) {
-    const rare = cards.filter((c) => c.rare);
-    const from = rare.length ? rare : cards;
+  // ИИ выбирает редкую карточку в первую очередь, иначе — случайную; карточки характеристик,
+  // которые уже 19–20, не берёт (если выбора нет — берёт любую, прибавка всё равно не выше 20)
+  function aiPick(cards, e, id) {
+    const useful = cards.filter((c) => !uselessCard(c, e, id));
+    const pool = useful.length ? useful : cards;
+    const rare = pool.filter((c) => c.rare);
+    const from = rare.length ? rare : pool;
     return from[Math.floor(Math.random() * from.length)];
   }
 
@@ -148,10 +151,29 @@ const League = (() => {
     return { ...lost, saved };
   }
 
-  function applyUpgrade(e, up) {
+  // id — герой (нужен, чтобы карточки характеристик не поднимали их выше STAT_CAP)
+  function applyUpgrade(e, up, id) {
     up.apply(e);
+    if (id) {
+      const base = HERO_BY_ID[id].stats;
+      for (const k of Object.keys(e.bonus)) e.bonus[k] = Math.min(e.bonus[k], STAT_CAP - base[k]);
+    }
     e.picks.push(up.id);
     e.pending = Math.max(0, e.pending - 1);
+  }
+
+  // Итоговые характеристики героя
+  const totals = (e, id) => {
+    const base = HERO_BY_ID[id].stats;
+    return { str: base.str + e.bonus.str, agi: base.agi + e.bonus.agi, end: base.end + e.bonus.end };
+  };
+  // Карточка бесполезна для героя: поднимает только характеристики, которые уже 19–20
+  function uselessCard(c, e, id) {
+    if (!e || !id) return false;
+    const t = totals(e, id);
+    if (c.stat) return t[c.stat] >= STAT_CAP - 1;
+    if (c.id === 'all') return Object.values(t).every((v) => v >= STAT_CAP - 1);
+    return false;
   }
 
   // Исход матча: 'home' | 'away' | 'draw'. Старые сохранения без winner — по очкам.

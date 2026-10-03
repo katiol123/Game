@@ -904,11 +904,11 @@ const App = (() => {
           ${special ? `<p class="lu-special">${tr(`Особые карточки ${SPECIAL_LEVEL}-го уровня`, `Special level ${SPECIAL_LEVEL} cards`)}</p>` : ''}
           <p class="lu-hint">${human ? tr('Выберите улучшение', 'Choose an upgrade') : tr('ИИ выбирает улучшение…', 'AI is choosing an upgrade…')}</p>
           <div class="lu-cards">${cards.map((c, i) => {
-            const cur = c.stat ? h.stats[c.stat] : null;
+            const cur = c.stat ? h.stats[c.stat] : null; // прибавка не выше STAT_CAP
             return `<button class="up-card ${c.rare ? 'rare' : ''}" data-i="${i}" style="--i:${i}" ${human ? '' : 'disabled'}>
               ${c.rare ? `<i class="uc-rare">${tr('Редкая', 'Rare')}</i>` : ''}
               <span class="uc-icon">${c.icon}</span><b>${c.name}</b><small>${c.desc}</small>
-              ${cur !== null ? `<em>${cur} → ${cur + (c.amount || 1)}</em>` : ''}
+              ${cur !== null ? `<em>${cur} → ${Math.min(STAT_CAP, Math.max(cur, cur + (c.amount || 1)))}</em>` : ''}
             </button>`;
           }).join('')}</div>
         </div>`;
@@ -920,7 +920,7 @@ const App = (() => {
         if (el.dataset.done) return;
         el.dataset.done = '1';
         const up = cards[i];
-        League.applyUpgrade(roster[id], up);
+        League.applyUpgrade(roster[id], up, id);
         League.save(state);
         Sound.play('select');
         el.querySelectorAll('.up-card').forEach((b, j) => b.classList.add(j === i ? 'chosen' : 'faded'));
@@ -936,7 +936,7 @@ const App = (() => {
           if (b) choose(+b.dataset.i);
         });
       } else {
-        const pick = aiPick(cards);
+        const pick = aiPick(cards, roster[id], id);
         setTimeout(() => choose(cards.indexOf(pick)), 1500 * k);
       }
     });

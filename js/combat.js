@@ -11,7 +11,8 @@ const Combat = (() => {
   const GEM = { red: 0, orange: 1, yellow: 2, green: 3, blue: 4, purple: 5 };
   const DUEL_MOVES = 3;          // «Дуэль на закате»: последние ходы каждого бойца
   const DUEL_ENEMY_FACTOR = 0.4; // доля урона соперника Пыли в дополнительных ударах
-  const SOFA_BASE_DODGE = 0.1;   // «Невозмутимость»: базовый шанс уворота
+  const SOFA_BASE_DODGE = 0.1;
+  const BLEED_BASE = 0.075;      // «Кровотечение»: базовый шанс, к нему + (красные − 10) × 5 %   // «Невозмутимость»: базовый шанс уворота
   // «Два ствола»: множитель комбо для второй шкалы не выше cap, урон ударов со второй шкалы × dmgFactor
   const TWO_BARRELS = { cap: 2, capUp: 2.5, dmgFactor: 0.5, dmgFactorUp: 0.75 };
   // «Таран»: на каком шаге каскада срабатывает и какая доля урона (обычная / усиленная)
@@ -208,8 +209,8 @@ const Combat = (() => {
         refresh(def); // эффекты травмы включаются сразу
       }
 
-      // «Кровотечение»: шанс (красные − 10) × 5 % при попадании, до конца боя
-      if (hasPassive(att, 'frog') && !def.bleed && def.hp > 0 && rnd() < Math.min(1, over10(g, GEM.red) * 0.05)) {
+      // «Кровотечение»: шанс 7,5% + (красные − 10) × 5 % при попадании, до конца боя
+      if (hasPassive(att, 'frog') && !def.bleed && def.hp > 0 && rnd() < Math.min(1, BLEED_BASE + over10(g, GEM.red) * 0.05)) {
         def.bleed = true;
         def.bleedPer = upPassive(att, 'frog') ? 5 : 4;
         ev.bleedApplied = true;

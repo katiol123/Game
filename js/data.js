@@ -97,6 +97,7 @@ const PERKS = {
   home: { points: 400 },            // «Родные стены»: +400 очков в начале домашнего боя
   fury: { mult: 1.3 },              // «Праведный гнев»: +30% урона, пока у соперника больше текущего здоровья
 };
+const STAT_CAP = 20;          // карточки характеристик не поднимают их выше 20
 const STAT_CARD_CHANCE = 0.3; // каждая из трёх карточек характеристик
 const RARE_CHANCE = 0.1;      // все редкие вместе
 const RARE_UPGRADES = [
@@ -170,8 +171,8 @@ const PASSIVES = {
   },
   frog: {
     icon: '🩸', name: T('Кровотечение', 'Bloodletting'),
-    desc: T('Каждый удар с шансом (красных камней на поле − 10) × 5 % вешает на врага кровотечение до конца боя. В начале каждого хода врага оно наносит (красных камней на поле − 10) × 4 урона.',
-      'Every strike has a (red gems on the board − 10) × 5 % chance to make the enemy bleed until the end of the bout. At the start of each enemy turn it deals (red gems on the board − 10) × 4 damage.'),
+    desc: T('Каждый удар с шансом 7,5% + (красных камней на поле − 10) × 5 % вешает на врага кровотечение до конца боя. В начале каждого хода врага оно наносит (красных камней на поле − 10) × 4 урона.',
+      'Every strike has a 7.5% + (red gems on the board − 10) × 5 % chance to make the enemy bleed until the end of the bout. At the start of each enemy turn it deals (red gems on the board − 10) × 4 damage.'),
 
     up: T('Кровотечение наносит +1 урона за каждый красный камень сверх 10: (красных − 10) × 5.',
       'Bleeding deals +1 damage per red gem above 10: (red − 10) × 5.'),
